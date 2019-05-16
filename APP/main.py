@@ -819,7 +819,7 @@ class ParamScreen(Screen):
 			resulted=str(resulted[1])
 			resulted=resulted[:-2]
 			location=str(resulted[2:])
-			print(lodfcation)
+			#print(location)
 			if len(location)<1:
 				print('no usb stick detected')
 				self.b1000005.pos=320,170
