@@ -35,12 +35,15 @@
     screen_one:screen_one
     screen_two:screen_two
     screen_three:screen_three
+    screen_four:screen_four
+    screen_five:screen_five
+    screen_six:screen_six
+    screen_seven:screen_seven
 
     SeqScreen:
         id:screen_one
         name:'piano_roll'
         manager: screen_manager
-
 
     SongScreen:
         id:screen_two 
@@ -62,12 +65,12 @@
         name: 'LoadSeq'
         manager: screen_manager
 
-    SaveSeq:
+    SaveSong:
         id:screen_six
         name: 'SaveSong'
         manager: screen_manager
 
-    SaveSeq:
+    LoadSong:
         id:screen_seven
         name: 'LoadSong'
         manager: screen_manager
@@ -551,6 +554,474 @@
             text:"dw"
             pos: 1010,10
             on_press:saveseq.dw()
+
+
+<LoadSong>
+    id: loadsong
+    b007:b007
+    b5001:b5001
+    b5002:b5002
+    b5003:b5003
+    b5004:b5004
+    b5005:b5005
+    b5006:b5006
+    b5007:b5007
+    b5008:b5008
+    b5009:b5009
+    b5010:b5010
+    b5011:b5011
+    b5012:b5012
+    b5013:b5013
+    b5014:b5014
+    b5015:b5015
+    b5016:b5016
+    b001:b001
+    b002:b002
+
+    GridLayout:
+        canvas.before:
+            Color:
+                rgba: (.37, .39, .45, 0.4)
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        CustButton3:
+            pos: 648,419
+            size: 150, 60
+            text: "CLOSE"
+            id:b007
+            on_press:root.manager.current='song_mode'
+            on_press: loadsong.leaving()
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+
+        CustButton3:
+            pos: 139,236
+            size: 130,67
+            text: "01"
+            id:b5001
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(1)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 269,236
+            size: 130,67
+            text: "02"
+            id:b5002
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(2)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 399,236
+            size: 130,67
+            text: "03"
+            id:b5003
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(3)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 529,236
+            size: 130,67
+            text: "04"
+            id:b5004
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(4)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 139,168
+            size: 130,67
+            text: "05"
+            id:b5005
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(5)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 269,168
+            size: 130,67
+            text: "06"
+            id:b5006
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(6)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 399,168
+            size: 130,67
+            text: "07"
+            id:b5007
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(7)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 529,168
+            size: 130,67
+            text: "08"
+            id:b5008
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(8)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 139,100
+            size: 130,67
+            text: "09"
+            id:b5009
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(9)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 269,100
+            size: 130,67
+            text: "10"
+            id:b5010
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(10)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 399,100
+            size: 130,67
+            text: "11"
+            id:b5011
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(11)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 529,100
+            size: 130,67
+            text: "12"
+            id:b5012
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(12)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 139,32
+            size: 130,67
+            text: "13"
+            id:b5013
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(13)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 269,32
+            size: 130,67
+            text: "14"
+            id:b5014
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(14)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 399,32
+            size: 130,67
+            text: "15"
+            id:b5015
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(15)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 529,32
+            size: 130,67
+            text: "16"
+            id:b5016
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:loadsong.choice(16)
+            on_press:root.manager.current='song_mode'
+
+        CustToggleButton:
+            id:b001
+            pos: 190,330
+            size: 200,60
+            text: "INTERNAL"
+            state: "down"
+            on_press: b002.state="normal"
+            on_press: b001.state="down"
+
+        CustToggleButton:
+            markup: True
+            id:b002
+            pos: 410,330
+            size: 200,60
+            text: "IMPORT %s"%(icon('icon-lock', 22))
+            on_press: b001.state="down"
+            on_press: b002.state="normal"
+        Label:
+            pos: 350,385
+            font_size:28
+            text:"Loading Song:"
+        CustButton3:
+            text:"up"
+            pos: 1010,50
+            on_press:loadsong.up()
+        CustButton3:
+            text:"dw"
+            pos: 1010,10
+            on_press:loadsong.dw()
+
+
+
+<SaveSong>
+    id: savesong
+    b007:b007
+    b5001:b5001
+    b5002:b5002
+    b5003:b5003
+    b5004:b5004
+    b5005:b5005
+    b5006:b5006
+    b5007:b5007
+    b5008:b5008
+    b5009:b5009
+    b5010:b5010
+    b5011:b5011
+    b5012:b5012
+    b5013:b5013
+    b5014:b5014
+    b5015:b5015
+    b5016:b5016
+    b001:b001
+    b002:b002
+
+    GridLayout:
+        canvas.before:
+            Color:
+                rgba: (.37, .39, .45, 0.4)
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        CustButton3:
+            pos: 648,419
+            size: 150, 60
+            text: "CLOSE"
+            id:b007
+            on_press:root.manager.current='song_mode'
+            on_press: savesong.leaving()
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+
+        CustButton3:
+            pos: 139,236
+            size: 130,67
+            text: "01"
+            id:b5001
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(1)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 269,236
+            size: 130,67
+            text: "02"
+            id:b5002
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(2)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 399,236
+            size: 130,67
+            text: "03"
+            id:b5003
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(3)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 529,236
+            size: 130,67
+            text: "04"
+            id:b5004
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(4)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 139,168
+            size: 130,67
+            text: "05"
+            id:b5005
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(5)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 269,168
+            size: 130,67
+            text: "06"
+            id:b5006
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(6)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 399,168
+            size: 130,67
+            text: "07"
+            id:b5007
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(7)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 529,168
+            size: 130,67
+            text: "08"
+            id:b5008
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(8)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 139,100
+            size: 130,67
+            text: "09"
+            id:b5009
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(9)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 269,100
+            size: 130,67
+            text: "10"
+            id:b5010
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(10)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 399,100
+            size: 130,67
+            text: "11"
+            id:b5011
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(11)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 529,100
+            size: 130,67
+            text: "12"
+            id:b5012
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(12)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 139,32
+            size: 130,67
+            text: "13"
+            id:b5013
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(13)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 269,32
+            size: 130,67
+            text: "14"
+            id:b5014
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(14)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 399,32
+            size: 130,67
+            text: "15"
+            id:b5015
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(15)
+            on_press:root.manager.current='song_mode'
+        CustButton3:
+            pos: 529,32
+            size: 130,67
+            text: "16"
+            id:b5016
+            font_size: 28
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:savesong.choice(16)
+            on_press:root.manager.current='song_mode'
+
+        CustToggleButton:
+            id:b001
+            pos: 190,330
+            size: 200,60
+            text: "INTERNAL"
+            state: "down"
+            on_press: b002.state="normal"
+            on_press: b001.state="down"
+
+        CustToggleButton:
+            markup: True
+            id:b002
+            pos: 410,330
+            size: 200,60
+            text: "EXPORT %s"%(icon('icon-lock', 22))
+            on_press: b001.state="down"
+            on_press: b002.state="normal"
+
+        Label:
+            pos: 350,385
+            font_size:28
+            text:"Saving Song:"
+        CustButton3:
+            text:"up"
+            pos: 1010,50
+            on_press:savesong.up()
+        CustButton3:
+            text:"dw"
+            pos: 1010,10
+            on_press:savesong.dw()
 
             
 
@@ -1586,7 +2057,7 @@
             font_size: 18
             id:b100
             background_color: (.37, .39, .45, 0.4)
-            on_press:smode.trackmenu(b100)            
+            on_press:smode.trackmenu(b100)           
         CustButton4:
             pos: 1,48
             text: "7"
@@ -2348,7 +2819,7 @@
             size: 150, 60
             text: "TOOLS"
             id:b005
-            on_press: b005.state='normal'
+            on_press: smode.file()
         CustToggleButton:
             pos: 496,419
             size: 150, 60
@@ -2426,6 +2897,9 @@
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
+            on_press:root.manager.current='SaveSong'
+            on_press: smode.closemenus()
+            on_press: smode.leaving()
 
         CustButton3:
             pos: 496,900
@@ -2435,6 +2909,9 @@
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
+            on_press:root.manager.current='LoadSong'
+            on_press: smode.closemenus()
+            on_press: smode.leaving()
 
 
 
@@ -3424,8 +3901,8 @@
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press: sequencer.closemenus()
-            #on_press:root.manager.current='LFOScreen'
-            #on_press: sequencer.leaving()  
+            on_press:root.manager.current='LFOScreen'
+            on_press: sequencer.leaving()  
         CustButton3:
             markup: True
             pos: 344,900
@@ -3436,8 +3913,8 @@
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press: sequencer.closemenus()
-            #on_press:root.manager.current='ADSRScreen'
-            #on_press: sequencer.leaving()              
+            on_press:root.manager.current='ADSRScreen'
+            on_press: sequencer.leaving()              
 
         CustButton3:
             pos: 496,900

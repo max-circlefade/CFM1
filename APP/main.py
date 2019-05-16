@@ -819,7 +819,7 @@ class ParamScreen(Screen):
 			resulted=str(resulted[1])
 			resulted=resulted[:-2]
 			location=str(resulted[2:])
-			print(location)
+			#print(location)
 			if len(location)<1:
 				print('no usb stick detected')
 				self.b1000005.pos=320,170
@@ -916,6 +916,8 @@ class SongScreen(Screen):
 
 	def on_enter(self):
 		self.b003.text=str(BPM)
+		self.loadseq()
+		print(song)
 		Clock.schedule_interval(self.listening, 0.002)
 		w1.value=0
 		self.b004.text=str(loopsizeS/64)
@@ -1138,6 +1140,7 @@ class SongScreen(Screen):
 	def loadseq(self):
 		self.clear()
 		i=0
+		print('looading song',song)
 		while i <16:
 			for elem in song[rangeXs+i]:
 				elemY=elem-rangeYs
@@ -2537,6 +2540,335 @@ class LoadSeq(Screen):
 
 
 
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+class SaveSong(Screen):
+
+	def on_enter(self):
+		global rangeFile
+		global playing
+		v1.value=0
+		playing=0
+		rangeFile=0
+		w1.value=0
+		Clock.schedule_interval(self.listening, 0.002)
+		self.b5001.text=str(rangeFile*4+1)
+		self.b5002.text=str(rangeFile*4+2)
+		self.b5003.text=str(rangeFile*4+3)
+		self.b5004.text=str(rangeFile*4+4)
+		self.b5005.text=str(rangeFile*4+5)
+		self.b5006.text=str(rangeFile*4+6)
+		self.b5007.text=str(rangeFile*4+7)
+		self.b5008.text=str(rangeFile*4+8)
+		self.b5009.text=str(rangeFile*4+9)
+		self.b5010.text=str(rangeFile*4+10)
+		self.b5011.text=str(rangeFile*4+11)
+		self.b5012.text=str(rangeFile*4+12)
+		self.b5013.text=str(rangeFile*4+13)
+		self.b5014.text=str(rangeFile*4+14)
+		self.b5015.text=str(rangeFile*4+15)
+		self.b5016.text=str(rangeFile*4+16)
+
+	def choice(self, chosen):
+		print(chosen)
+		if self.b001.state=="down":
+			if rpi==1:
+				with open('/home/pi/Desktop2/UIP/savedsong.json', "w") as s2:
+					savedsong["savedsong"][chosen+rangeFile*4-1]["song"] = song
+					json.dump(savedsong, s2)
+			else:
+				with open('savedsong.json', "w") as s2:
+					savedsong["savedsong"][chosen+rangeFile*4-1]["song"] = song
+					json.dump(savedsong, s2)
+		"""
+		else:
+			from midi import MIDIFile
+			track    = 0
+			channel  = 0
+			time     = 0
+			tempo    = 120
+			volume   = 100
+			MyMIDI = MIDIFile(1)
+			MyMIDI.addTempo(track, time, tempo)
+			for elem in sequencepool2[trackselected-1]:
+				if elem[2]==1: MyMIDI.addNote(track, channel, elem[1]+24, Decimal(elem[0]-1)/16, Decimal(elem[3])/16, volume)
+			for files in os.walk('/media/pi'):
+				resulted=files
+				break
+			resulted=str(resulted[1])
+			resulted=resulted[:-2]
+			location=str(resulted[2:])
+			print(location)
+			if len(location)>1:
+				filetext='/media/pi/'+location+'/'+str(chosen+rangeFile*4)+'.mid'
+				print(filetext)
+			try:
+				with open(filetext, "wb") as output_file:
+					MyMIDI.writeFile(output_file)
+			except: print("error usb")
+		"""
+		self.leaving()
+
+
+	def up(self):
+		global rangeFile
+		if rangeFile<10:
+			rangeFile+=1
+		self.b5001.text=str(rangeFile*4+1)
+		self.b5002.text=str(rangeFile*4+2)
+		self.b5003.text=str(rangeFile*4+3)
+		self.b5004.text=str(rangeFile*4+4)
+		self.b5005.text=str(rangeFile*4+5)
+		self.b5006.text=str(rangeFile*4+6)
+		self.b5007.text=str(rangeFile*4+7)
+		self.b5008.text=str(rangeFile*4+8)
+		self.b5009.text=str(rangeFile*4+9)
+		self.b5010.text=str(rangeFile*4+10)
+		self.b5011.text=str(rangeFile*4+11)
+		self.b5012.text=str(rangeFile*4+12)
+		self.b5013.text=str(rangeFile*4+13)
+		self.b5014.text=str(rangeFile*4+14)
+		self.b5015.text=str(rangeFile*4+15)
+		self.b5016.text=str(rangeFile*4+16)
+
+	def dw(self):
+		global rangeFile
+		if rangeFile>0:
+			rangeFile-=1
+			self.b5001.text=str(rangeFile*4+1)
+			self.b5002.text=str(rangeFile*4+2)
+			self.b5003.text=str(rangeFile*4+3)
+			self.b5004.text=str(rangeFile*4+4)
+			self.b5005.text=str(rangeFile*4+5)
+			self.b5006.text=str(rangeFile*4+6)
+			self.b5007.text=str(rangeFile*4+7)
+			self.b5008.text=str(rangeFile*4+8)
+			self.b5009.text=str(rangeFile*4+9)
+			self.b5010.text=str(rangeFile*4+10)
+			self.b5011.text=str(rangeFile*4+11)
+			self.b5012.text=str(rangeFile*4+12)
+			self.b5013.text=str(rangeFile*4+13)
+			self.b5014.text=str(rangeFile*4+14)
+			self.b5015.text=str(rangeFile*4+15)
+			self.b5016.text=str(rangeFile*4+16)
+
+	def listening(self,*args):
+		global wheel
+		global buttonparam
+		encodervalue=w1.value
+		encoderpushed=w2.value
+		w1.value=0
+		if encodervalue>0:
+			wheel+=1
+			if wheel==2:
+				wheel=0
+				self.up()
+		elif encodervalue<0:
+			wheel+=1
+			if wheel==2:
+				wheel=0
+				self.dw()
+		if rpi==1:self.usbcheck()
+
+	def usbcheck(self):
+		for files in os.walk('/media/pi'):
+			resulted=files
+			break
+		resulted=str(resulted[1])
+		resulted=resulted[:-2]
+		location=str(resulted[2:])
+		if len(location)<1:
+			self.b002.state="normal"
+			self.b001.state="down"
+			self.b002.text="EXPORT %s"%(icon('icon-lock', 22))
+		else:
+			self.b002.text="EXPORT"
+
+	def leaving(self):
+		Clock.unschedule(self.listening)
+		print("unschedule SaveSeq")
+
+
+
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+class LoadSong(Screen):
+
+	def on_enter(self):
+		global rangeFile
+		global playing
+		v1.value=0
+		playing=0
+		rangeFile=0
+		w1.value=0
+		Clock.schedule_interval(self.listening, 0.002)
+		self.b5001.text=str(rangeFile*4+1)
+		self.b5002.text=str(rangeFile*4+2)
+		self.b5003.text=str(rangeFile*4+3)
+		self.b5004.text=str(rangeFile*4+4)
+		self.b5005.text=str(rangeFile*4+5)
+		self.b5006.text=str(rangeFile*4+6)
+		self.b5007.text=str(rangeFile*4+7)
+		self.b5008.text=str(rangeFile*4+8)
+		self.b5009.text=str(rangeFile*4+9)
+		self.b5010.text=str(rangeFile*4+10)
+		self.b5011.text=str(rangeFile*4+11)
+		self.b5012.text=str(rangeFile*4+12)
+		self.b5013.text=str(rangeFile*4+13)
+		self.b5014.text=str(rangeFile*4+14)
+		self.b5015.text=str(rangeFile*4+15)
+		self.b5016.text=str(rangeFile*4+16)
+
+	def choice(self, chosen):
+		global song
+		print(chosen)
+		if self.b001.state=="down":
+			if rpi==1:
+				with open('/home/pi/Desktop2/UIP/savedsong.json') as s2:
+					savedsong = json.load(s2)
+					#print((savedsong["savedsong"][chosen+rangeFile*4-1]["song"]))
+					song=savedsong["savedsong"][chosen+rangeFile*4-1]["song"]
+					q3.put(song)
+			else:
+				with open('savedsong.json') as s2:
+					savedsong = json.load(s2)
+					#print((savedsong["savedsong"][chosen+rangeFile*4-1]["song"]))
+					song=savedsong["savedsong"][chosen+rangeFile*4-1]["song"]
+					q3.put(song)
+		"""
+		else:
+			from midiconvert import MIDIconvert
+			for files in os.walk('/media/pi'):
+				resulted=files
+				break
+			resulted=str(resulted[1])
+			resulted=resulted[:-2]
+			location=str(resulted[2:])
+			print(location)
+			if len(location)>1:
+				filetext='/media/pi/'+location+'/'+str(chosen+rangeFile*4)+'.mid'
+				print(filetext)
+				try:
+					sequencepool2[trackselected-1]=MIDIconvert(filetext)
+					print(sequencepool2)
+				except:
+					print('no such file')
+					sequencepool2[trackselected-1]=[]
+			else: sequencepool2[trackselected-1]=[]
+		"""
+		self.convert()
+		self.leaving()
+
+	def usbcheck(self):
+		for files in os.walk('/media/pi'):
+			resulted=files
+			break
+		resulted=str(resulted[1])
+		resulted=resulted[:-2]
+		location=str(resulted[2:])
+		if len(location)<1:
+			self.b002.state="normal"
+			self.b001.state="down"
+			self.b002.text="IMPORT %s"%(icon('icon-lock', 22))
+		else:
+			self.b002.text="IMPORT"
+
+	def convert(self):
+		for i,elem in enumerate(sequencepool3[trackselected-1]): sequencepool3[trackselected-1][i]=[]
+		for elem in sequencepool2[trackselected-1]: sequencepool3[trackselected-1][elem[0]-1].append([elem[1],elem[2],elem[3]])
+		q6.put(sequencepool3[trackselected-1])
+
+	def up(self):
+		global rangeFile
+		if rangeFile<21:
+			rangeFile+=1
+			self.b5001.text=str(rangeFile*4+1)
+			self.b5002.text=str(rangeFile*4+2)
+			self.b5003.text=str(rangeFile*4+3)
+			self.b5004.text=str(rangeFile*4+4)
+			self.b5005.text=str(rangeFile*4+5)
+			self.b5006.text=str(rangeFile*4+6)
+			self.b5007.text=str(rangeFile*4+7)
+			self.b5008.text=str(rangeFile*4+8)
+			self.b5009.text=str(rangeFile*4+9)
+			self.b5010.text=str(rangeFile*4+10)
+			self.b5011.text=str(rangeFile*4+11)
+			self.b5012.text=str(rangeFile*4+12)
+			self.b5013.text=str(rangeFile*4+13)
+			self.b5014.text=str(rangeFile*4+14)
+			self.b5015.text=str(rangeFile*4+15)
+			self.b5016.text=str(rangeFile*4+16)
+
+	def dw(self):
+		global rangeFile
+		if rangeFile>0:
+			rangeFile-=1
+			self.b5001.text=str(rangeFile*4+1)
+			self.b5002.text=str(rangeFile*4+2)
+			self.b5003.text=str(rangeFile*4+3)
+			self.b5004.text=str(rangeFile*4+4)
+			self.b5005.text=str(rangeFile*4+5)
+			self.b5006.text=str(rangeFile*4+6)
+			self.b5007.text=str(rangeFile*4+7)
+			self.b5008.text=str(rangeFile*4+8)
+			self.b5009.text=str(rangeFile*4+9)
+			self.b5010.text=str(rangeFile*4+10)
+			self.b5011.text=str(rangeFile*4+11)
+			self.b5012.text=str(rangeFile*4+12)
+			self.b5013.text=str(rangeFile*4+13)
+			self.b5014.text=str(rangeFile*4+14)
+			self.b5015.text=str(rangeFile*4+15)
+			self.b5016.text=str(rangeFile*4+16)
+
+	def listening(self,*args):
+		global wheel
+		global buttonparam
+		encodervalue=w1.value
+		encoderpushed=w2.value
+		w1.value=0
+		if encodervalue>0:
+			wheel+=1
+			if wheel==2:
+				wheel=0
+				self.up()
+		elif encodervalue<0:
+			wheel+=1
+			if wheel==2:
+				wheel=0
+				self.dw()
+		if rpi==1:self.usbcheck()
+
+
+	def leaving(self):
+		Clock.unschedule(self.listening)
+		print("unschedule LoadSeq")
+
+
+
 
 ##############################################################################################
 ##############################################################################################
@@ -3478,7 +3810,7 @@ class Timing():
 					#print(('loopsize', loopsize))
 			while q3.empty() is False:
 					song=q3.get()
-					#print(('song', song))
+					print(('song', song))
 			while q4.empty() is False:
 					Sendinfo=q4.get()
 					#print(('sendinfo', Sendinfo))
@@ -3516,7 +3848,7 @@ class Timing():
 					count=1
 				nextcall = nextcall+interval
 				self.send2(count,sequencepool3,loopsize,song,Sendinfo,port,Syncinfo)
-				print((nextcall-time.time()))
+				#print((nextcall-time.time()))
 				if nextcall-time.time()>0:
 					time.sleep(nextcall-time.time())
 				else:
@@ -4215,10 +4547,12 @@ buttonpushedsong="b000"
 if rpi==1:
 	with open('/home/pi/Desktop2/UIP/param.json') as f: paramcf1 = json.load(f)
 	with open('/home/pi/Desktop2/UIP/savedseq.json') as s: saved = json.load(s)
+	with open('/home/pi/Desktop2/UIP/savedsong.json') as s2: savedsong = json.load(s2)
 	with open("/home/pi/Desktop2/UIP/licence.json") as l: licence=json.load(l)
 else:
 	with open('param.json') as f: paramcf1 = json.load(f)
 	with open('savedseq.json') as s: saved = json.load(s)
+	with open('savedsong.json') as s2: savedsong = json.load(s2)
 	with open("licence.json") as l: licence=json.load(l)
 version=licence["licence"][0]["version"]
 print("CFM1 Version: " + str(version))
