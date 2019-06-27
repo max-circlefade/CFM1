@@ -187,7 +187,21 @@ class ParamScreen(Screen):
 		else: self.b30005.pos=1479,320
 		if self.b10006.text=="PITCH": self.b30006.pos=479,20
 		else: self.b30006.pos=1479,320
+		#self.NoneHide()
 
+	def NoneHide(self):
+		if self.b20001.text!="NONE": self.b10001.pos=328,320
+		else: self.b10001.pos=1479,320
+		if self.b20002.text!="NONE": self.b10002.pos=328,260
+		else: self.b10002.pos=1479,320
+		if self.b20003.text!="NONE": self.b10003.pos=328,200
+		else: self.b10003.pos=1479,320
+		if self.b20004.text!="NONE": self.b10004.pos=328,140
+		else: self.b10004.pos=1479,320
+		if self.b20005.text!="NONE": self.b10005.pos=328,80
+		else: self.b10005.pos=1479,320
+		if self.b20006.text!="NONE": self.b10006.pos=328,20
+		else: self.b10006.pos=1479,320		
 
 
 	def midiportselect(self):
@@ -239,15 +253,34 @@ class ParamScreen(Screen):
 		self.b5012.text="12"
 		self.b5016.text="16"
 
-	def CVTypeselect(self):
+	def CVTypeselect(self,b):
+		self.CVselected(b)
 		self.b4000.pos=328,120
-		self.b4001.pos=329,121
-		self.b4002.pos=329,182
-		self.b4001.text="GATE"
-		self.b4002.text="PITCH"
+		self.b4002.pos=329,182	
 		self.b4003.text="CV TYPE:"
 		self.b4003.pos=329,243
-		self.b3005.pos=0,0
+		self.b3005.pos=0,0		
+		if str(paramcf1["CV-map"][CVselectedparam-1]["Track"])!= "NONE":
+	
+			print('trackmode',trackmode)
+			print(paramcf1["CV-map"][CVselectedparam-1]["Track"])
+			if trackmode[int(paramcf1["CV-map"][CVselectedparam-1]["Track"])-1]==1:
+				self.b4001.text="GATE"
+				self.b4002.text="PITCH"
+				self.b4001.pos=329,121
+			elif trackmode[int(paramcf1["CV-map"][CVselectedparam-1]["Track"])-1]==2:
+				self.b4002.text="LFO"
+			else:
+				self.b4002.text="ADSR"
+
+		else:
+			self.b4001.text="GATE"
+			self.b4002.text="PITCH"
+			self.b4001.pos=329,121
+
+	def CVtrack(self):
+		#CVselectedparam
+		pass
 
 	def CVTrackselect(self):
 		global rangeCVTrack
@@ -353,7 +386,7 @@ class ParamScreen(Screen):
 		for key, val in list(self.ids.items()):
 			if val==button: ID=key
 		CVselectedparam=int(ID[-2:])+rangeCV
-		print(CVselectedparam)
+		#print('CVselectedparam',CVselectedparam)
 
 	def port1(self,button):
 		global Sendinfo
@@ -379,7 +412,7 @@ class ParamScreen(Screen):
 			self.CVupdate()
 			self.convert()
 		if self.b4003.text=="CV TYPE:":
-			if int(new)==1:
+			if self.b4002.text=="PITCH" and int(new)==1:
 				paramcf1["CV-map"][CVselectedparam-1]["Type"] = "PITCH"
 				paramcf1["CV-map"][CVselectedparam-1]["Voltage"] = "[ -5V ; 5V ]"
 				i=0
@@ -388,7 +421,25 @@ class ParamScreen(Screen):
 						paramcf1["CV-map"][i]["Track"] = "NONE"
 						break
 					i+=1
-			if int(new)==2:
+			if self.b4002.text=="LFO" and int(new)==1:
+				paramcf1["CV-map"][CVselectedparam-1]["Type"] = "LFO"
+				paramcf1["CV-map"][CVselectedparam-1]["Voltage"] = "[ -5V ; 5V ]"
+				i=0
+				while i<12:
+					if paramcf1["CV-map"][i]["Type"]== "LFO" and i!=CVselectedparam-1 and paramcf1["CV-map"][i]["Track"]==paramcf1["CV-map"][CVselectedparam-1]["Track"]:
+						paramcf1["CV-map"][i]["Track"] = "NONE"
+						break
+					i+=1
+			if self.b4002.text=="ADSR" and int(new)==1:
+				paramcf1["CV-map"][CVselectedparam-1]["Type"] = "ADSR"
+				paramcf1["CV-map"][CVselectedparam-1]["Voltage"] = "[ -5V ; 5V ]"
+				i=0
+				while i<12:
+					if paramcf1["CV-map"][i]["Type"]== "ADSR" and i!=CVselectedparam-1 and paramcf1["CV-map"][i]["Track"]==paramcf1["CV-map"][CVselectedparam-1]["Track"]:
+						paramcf1["CV-map"][i]["Track"] = "NONE"
+						break
+					i+=1									
+			if self.b4001.text=="GATE" and int(new)==2:
 				paramcf1["CV-map"][CVselectedparam-1]["Type"] = "GATE"
 				paramcf1["CV-map"][CVselectedparam-1]["Voltage"] = "[ -5V ; 5V ]"
 				i=0
@@ -447,13 +498,14 @@ class ParamScreen(Screen):
 				with open("param.json", "w") as jsonFile: json.dump(paramcf1, jsonFile)				
 			self.syncupdate()
 			self.convertsync()
+		print(Sendinfo)
 
 	def convert(self):
 		i=0
 		j=0
 		k=0
 		while j<len(Sendinfo):
-			Sendinfo[j]=[0,0,0,0,0,0,0,0,0]
+			Sendinfo[j]=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 			j+=1
 		while i<12:
 			if paramcf1["CV-map"][i]["Type"]=="PITCH" and paramcf1["CV-map"][i]["Track"]!="NONE":
@@ -462,20 +514,24 @@ class ParamScreen(Screen):
 				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][7]=CVinfo[i][2]
 				if paramcf1["CV-map"][i]["Voltage"]=="[ 0V ; 10V ]":
 					Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][5]=5
-				else:
-					pass
-			elif paramcf1["CV-map"][i]["Track"]=="NONE":
-				pass
-			else:
-				pass
+
 			if paramcf1["CV-map"][i]["Type"]=="GATE" and paramcf1["CV-map"][i]["Track"]!="NONE":
 				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][3]=CVinfo[i][0]
 				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][4]=CVinfo[i][1]
 				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][8]=CVinfo[i][2]
-			elif paramcf1["CV-map"][i]["Track"]=="NONE":
-				pass
-			else:
-				pass
+
+
+			if paramcf1["CV-map"][i]["Type"]=="LFO" and paramcf1["CV-map"][i]["Track"]!="NONE":
+				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][9]=CVinfo[i][0]
+				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][10]=CVinfo[i][1]
+				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][11]=CVinfo[i][2]
+
+			if paramcf1["CV-map"][i]["Type"]=="ADSR" and paramcf1["CV-map"][i]["Track"]!="NONE":
+				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][12]=CVinfo[i][0]
+				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][13]=CVinfo[i][1]
+				Sendinfo[int(paramcf1["CV-map"][i]["Track"])-1][14]=CVinfo[i][2]
+
+				
 			i+=1
 
 		while k<len(Sendinfo):
@@ -917,7 +973,7 @@ class SongScreen(Screen):
 	def on_enter(self):
 		self.b003.text=str(BPM)
 		self.loadseq()
-		print(song)
+		#print(song)
 		Clock.schedule_interval(self.listening, 0.002)
 		w1.value=0
 		self.b004.text=str(loopsizeS/64)
@@ -930,20 +986,61 @@ class SongScreen(Screen):
 			self.b001.state="normal"
 			self.b001.text="%s"%(icon('icon-play', 22))
 			self.movebarenter()
+		self.infos()
+
+
+	def infos(self):
+		listinfo=[self.lbl8,self.lbl7,self.lbl6,self.lbl5,self.lbl4,self.lbl3,self.lbl2,self.lbl1]
+		if displayinfo==1:
+			for n,elem in enumerate(listinfo):
+				if trackmode[n+rangeYs]==1: 
+					elem.text="SEQUENCE"
+					elem.pos[0]=46
+				elif trackmode[n+rangeYs]==2: 
+					elem.text="LFO"
+					elem.pos[0]=18
+				elif trackmode[n+rangeYs]==3: 
+					for i,value in enumerate(ADSRtrig):
+						if value==n+rangeYs+1:
+							elem.text="ADSR, TRIGGERED BY TRACK: " + str(i+1)
+							if i+1>9:elem.pos[0]=132
+							else:elem.pos[0]=128
+							break
+						else:
+							elem.text="ADSR, NO TRIGGER"
+							elem.pos[0]=79
+		else:
+			for n,elem in enumerate(listinfo):
+				elem.pos[0]=1000
+
+	def displayinfo(self):
+		global displayinfo
+		if displayinfo==0:
+			displayinfo=1
+			self.b0140.text="INFOS: ON"
+		else:
+			displayinfo=0
+			self.b0140.text="INFOS: OFF"
+		self.infos()
+
+
 
 
 	def menu(self):
 		if self.b007.state=="down":
-			self.b008.pos= 648,360
-			self.b009.pos= 648,301
+			#self.b008.pos= 648,360
+			self.b009.pos= 648,360
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
 			self.b013.pos= 344,900
 			self.b014.pos= 344,900
+			self.b0140.pos= 344,900			
 			self.b019.pos=1300,1120
 			self.b020.pos=1301,1121
 			self.b021.pos=1301,1182
 			self.b022.pos=1301,1243
+			self.b0222.pos=1301,1243
+			self.b0223.pos=1301,1243			
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -956,7 +1053,7 @@ class SongScreen(Screen):
 			self.b200.state="normal"
 			self.b100.state="normal"
 		else:
-			self.b008.pos= 648,900
+			#self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b010.pos= 1000,0
 
@@ -968,10 +1065,13 @@ class SongScreen(Screen):
 			self.b009.pos= 648,900
 			self.b013.pos= 344,900
 			self.b014.pos= 344,900
+			self.b0140.pos= 344,900			
 			self.b019.pos=1300,1120
 			self.b020.pos=1301,1121
 			self.b021.pos=1301,1182
 			self.b022.pos=1301,1243
+			self.b0222.pos=1301,1243
+			self.b0223.pos=1301,1243			
 			self.b007.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -990,8 +1090,9 @@ class SongScreen(Screen):
 
 	def file(self):
 		if self.b005.state=="down":
-			self.b013.pos= 344,360
-			self.b014.pos= 344,301
+			self.b013.pos= 344,301
+			self.b014.pos= 344,360
+			self.b0140.pos= 344,242		
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
 			self.b008.pos= 648,900
@@ -1000,6 +1101,8 @@ class SongScreen(Screen):
 			self.b020.pos=1301,1121
 			self.b021.pos=1301,1182
 			self.b022.pos=1301,1243
+			self.b0222.pos=1301,1243
+			self.b0223.pos=1301,1243						
 			self.b007.state="normal"
 			self.b006.state="normal"
 			self.b010.pos= 0,0
@@ -1014,6 +1117,7 @@ class SongScreen(Screen):
 		else:
 			self.b013.pos= 344,900
 			self.b014.pos= 344,900
+			self.b0140.pos= 344,900			
 			self.b010.pos= 1000,0
 
 	def closemenus(self):
@@ -1030,6 +1134,8 @@ class SongScreen(Screen):
 		self.b020.pos=1301,1121
 		self.b021.pos=1301,1182
 		self.b022.pos=1301,1243
+		self.b0222.pos=1301,1243
+		self.b0223.pos=1301,1243				
 		self.b010.pos= 1000,0
 		self.b800.state="normal"
 		self.b700.state="normal"
@@ -1122,6 +1228,7 @@ class SongScreen(Screen):
 			self.b800.text=str(rangeYs+2)
 			rangeYs=rangeYs+1
 		self.loadseq()
+		self.infos()
 
 	def moveYdw(self):
 		global rangeYs
@@ -1136,11 +1243,12 @@ class SongScreen(Screen):
 			self.b800.text=str(rangeYs)
 			rangeYs=rangeYs-1
 		self.loadseq()
+		self.infos()
 
 	def loadseq(self):
 		self.clear()
 		i=0
-		print('looading song',song)
+		#print('looading song',song)
 		while i <16:
 			for elem in song[rangeXs+i]:
 				elemY=elem-rangeYs
@@ -1222,12 +1330,16 @@ class SongScreen(Screen):
 		r2.put(trackselected)
 		s2.put(trackselected)		
 		v5.value=trackselected
+		self.b010.pos=0,0	
 		self.b019.pos=300,120
 		self.b020.pos=301,121
-		self.b021.pos=301,182
-		self.b022.pos=301,243
-		self.b010.pos=0,0
-
+		self.b021.pos=301,182				
+		if trackmode[trackselected-1]==1:
+			self.b022.pos=301,243
+		elif trackmode[trackselected-1]==2:
+			self.b0222.pos=301,243
+		elif trackmode[trackselected-1]==3:
+			self.b0223.pos=301,243
 
 	def cleartrack(self):
 		global song
@@ -1392,8 +1504,13 @@ class SeqScreen(Screen):
 		global rangeY
 		global rangeX
 		global zoom
+		global trackmode
+		trackmode[trackselected-1]=1
+		print('trackmode',trackmode[trackselected-1])
 		w1.value=0
 		Clock.schedule_interval(self.listening, 0.002)
+		self.deleteADSR()
+		self.deleteLFO()
 		if start > 0:
 			rangeY=36
 			rangeX=0
@@ -1859,6 +1976,8 @@ class SeqScreen(Screen):
 			self.b009.pos= 648,301
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
+			self.b023.pos= 496,900
+			self.b024.pos= 496,900
 			self.b013.pos= 344,900
 			self.b014.pos= 344,900
 			self.b016.pos= 344,900
@@ -1877,6 +1996,8 @@ class SeqScreen(Screen):
 		if self.b006.state=="down":
 			self.b011.pos= 496,360
 			self.b012.pos= 496,301
+			self.b023.pos= 496,242
+			self.b024.pos= 496,183
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b013.pos= 344,900
@@ -1890,6 +2011,8 @@ class SeqScreen(Screen):
 		else:
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
+			self.b023.pos= 496,900
+			self.b024.pos= 496,900
 			self.b010.pos= 1000,0
 
 	def tools(self):
@@ -1898,7 +2021,9 @@ class SeqScreen(Screen):
 			self.b014.pos= 344,301
 			self.b016.pos= 344,242
 			self.b020.pos= 344,183
-			self.b022.pos= 344,124			
+			self.b022.pos= 344,124
+			self.b023.pos= 496,900
+			self.b024.pos= 496,900			
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
 			self.b008.pos= 648,900
@@ -2228,7 +2353,21 @@ class SeqScreen(Screen):
 		self.b004.text=str(a) + "." +str(b)
 		self.loopbar()
 
+	def deleteLFO(self):
+		global EnvPool2
+		global EnvPool3
+		EnvPool2[trackselected-1]=[0]
+		EnvPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+		#print("deleted",EnvPool3[trackselected-1])
+		#print("EnvPool0",EnvPool0)
+		q7.put(EnvPool3[trackselected-1])
 
+	def deleteADSR(self):
+		global ADSRPool2
+		global ADSRPool3
+		ADSRPool2[trackselected-1]=[0]
+		ADSRPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+		q8.put(ADSRPool3[trackselected-1])
 
 
 
@@ -2587,10 +2726,22 @@ class SaveSong(Screen):
 			if rpi==1:
 				with open('/home/pi/Desktop2/UIP/savedsong.json', "w") as s2:
 					savedsong["savedsong"][chosen+rangeFile*4-1]["song"] = song
+					savedsong["savedsong"][chosen+rangeFile*4-1]["seq"] = sequencepool2
+					savedsong["savedsong"][chosen+rangeFile*4-1]["LFO"] = EnvPool2
+					savedsong["savedsong"][chosen+rangeFile*4-1]["ADSR"] = ADSRPool2
+					savedsong["savedsong"][chosen+rangeFile*4-1]["TRIG"] = ADSRtrig	
+					savedsong["savedsong"][chosen+rangeFile*4-1]["MODE"] = trackmode
+					savedsong["savedsong"][chosen+rangeFile*4-1]["PHASE"] = Phase																								
 					json.dump(savedsong, s2)
 			else:
 				with open('savedsong.json', "w") as s2:
 					savedsong["savedsong"][chosen+rangeFile*4-1]["song"] = song
+					savedsong["savedsong"][chosen+rangeFile*4-1]["seq"] = sequencepool2
+					savedsong["savedsong"][chosen+rangeFile*4-1]["LFO"] = EnvPool2
+					savedsong["savedsong"][chosen+rangeFile*4-1]["ADSR"] = ADSRPool2
+					savedsong["savedsong"][chosen+rangeFile*4-1]["TRIG"] = ADSRtrig	
+					savedsong["savedsong"][chosen+rangeFile*4-1]["MODE"] = trackmode
+					savedsong["savedsong"][chosen+rangeFile*4-1]["PHASE"] = Phase																	
 					json.dump(savedsong, s2)
 		"""
 		else:
@@ -2624,7 +2775,7 @@ class SaveSong(Screen):
 
 	def up(self):
 		global rangeFile
-		if rangeFile<10:
+		if rangeFile<6:
 			rangeFile+=1
 		self.b5001.text=str(rangeFile*4+1)
 		self.b5002.text=str(rangeFile*4+2)
@@ -2745,6 +2896,13 @@ class LoadSong(Screen):
 
 	def choice(self, chosen):
 		global song
+		global EnvPool2
+		global ADSRPool2
+		global trackmode
+		global ADSRtrig		
+		global sequencepool2
+		global Phase
+
 		print(chosen)
 		if self.b001.state=="down":
 			if rpi==1:
@@ -2752,13 +2910,29 @@ class LoadSong(Screen):
 					savedsong = json.load(s2)
 					#print((savedsong["savedsong"][chosen+rangeFile*4-1]["song"]))
 					song=savedsong["savedsong"][chosen+rangeFile*4-1]["song"]
-					q3.put(song)
+					sequencepool2=savedsong["savedsong"][chosen+rangeFile*4-1]["seq"]					
+					EnvPool2=savedsong["savedsong"][chosen+rangeFile*4-1]["LFO"]
+					ADSRPool2=savedsong["savedsong"][chosen+rangeFile*4-1]["ADSR"]
+					trackmode=savedsong["savedsong"][chosen+rangeFile*4-1]["MODE"]
+					ADSRtrig=savedsong["savedsong"][chosen+rangeFile*4-1]["TRIG"]	
+					Phase=savedsong["savedsong"][chosen+rangeFile*4-1]["PHASE"]									
+
 			else:
 				with open('savedsong.json') as s2:
 					savedsong = json.load(s2)
 					#print((savedsong["savedsong"][chosen+rangeFile*4-1]["song"]))
 					song=savedsong["savedsong"][chosen+rangeFile*4-1]["song"]
-					q3.put(song)
+					sequencepool2=savedsong["savedsong"][chosen+rangeFile*4-1]["seq"]
+					EnvPool2=savedsong["savedsong"][chosen+rangeFile*4-1]["LFO"]
+					ADSRPool2=savedsong["savedsong"][chosen+rangeFile*4-1]["ADSR"]
+					trackmode=savedsong["savedsong"][chosen+rangeFile*4-1]["MODE"]
+					ADSRtrig=savedsong["savedsong"][chosen+rangeFile*4-1]["TRIG"]
+					Phase=savedsong["savedsong"][chosen+rangeFile*4-1]["PHASE"]							
+					#print(sequencepool2)
+			q3.put(song)
+			q9.put(ADSRtrig)
+
+
 		"""
 		else:
 			from midiconvert import MIDIconvert
@@ -2780,8 +2954,11 @@ class LoadSong(Screen):
 					sequencepool2[trackselected-1]=[]
 			else: sequencepool2[trackselected-1]=[]
 		"""
-		self.convert()
+		self.convertsequence()
+		self.convertlfo()
+		self.convertadsr()
 		self.leaving()
+
 
 	def usbcheck(self):
 		for files in os.walk('/media/pi'):
@@ -2797,14 +2974,99 @@ class LoadSong(Screen):
 		else:
 			self.b002.text="IMPORT"
 
-	def convert(self):
-		for i,elem in enumerate(sequencepool3[trackselected-1]): sequencepool3[trackselected-1][i]=[]
-		for elem in sequencepool2[trackselected-1]: sequencepool3[trackselected-1][elem[0]-1].append([elem[1],elem[2],elem[3]])
-		q6.put(sequencepool3[trackselected-1])
+	def convertsequence(self):
+		global sequencepool3
+		i=0
+		while i<16:
+			for a,elem in enumerate(sequencepool3[i]): sequencepool3[i][a]=[]
+			for elem in sequencepool2[i]:sequencepool3[i][elem[0]-1].append([elem[1],elem[2],elem[3]])
+			#for elem in sequencepool2[i]:print(elem)
+			#print("UPDATED: channel:", i,sequencepool3[i])
+			i+=1
+		#print("sequencepool3",sequencepool3)
+		q10.put(sequencepool3)			
+
+
+
+
+	def convertlfo(self):
+		global EnvPool3
+		i=0
+		#print(EnvPool2)
+		while i<16:
+			if EnvPool2[i]!=[] and EnvPool2[i]!=[0] and EnvPool2[i]!=0 and trackmode[i]==2:
+				print(EnvPool2[i])
+				X=(((EnvPool2[i][0][0]-40)/700)+0.001)*loopsize[i]
+				Y=((EnvPool2[i][0][1]-195.2)/37)
+				a1=2*Y/X
+				b1=-Y
+				a2=2*Y/(X-loopsize[i]+1)
+				b2=Y-a2*X
+				PHASE=(Phase[i]+0.001-40)/700*loopsize[i]-1.37
+				a=0
+				while a<loopsize[i]:
+					n=(a+PHASE)%loopsize[i]
+					if n<X:
+						EnvPool3[i][a]=(a1*n+b1)*3/5
+					else:
+						EnvPool3[i][a]=(a2*n+b2)*3/5
+					a+=1
+			i+=1
+		q11.put(EnvPool3)
+
+	def convertadsr(self):
+		global ADSRPool3
+		i=0
+		while i<16:
+			if ADSRPool2[i]!=0 and ADSRPool2[i]!=[0] and trackmode[i]==3:
+				lps=loopsize[i]
+				p1=[0,0]
+				p2=[(ADSRPool2[i][0]-41)/700*lps+1,(ADSRPool2[i][1])/330]
+				p3=[(ADSRPool2[i][2]-52)/700*lps,(ADSRPool2[i][3])/330]
+				p4=[(ADSRPool2[i][4]-52)/700*lps,(ADSRPool2[i][5])/330]
+				p5=[(ADSRPool2[i][6]-52)/700*lps,(ADSRPool2[i][7])/330]	
+				#print("P",p1,p2,p3,p4,p5)					
+				j=0
+				a1=self.coefs(p1,p2)
+				a2=self.coefs(p2,p3)
+				a3=self.coefs(p3,p4)
+				a4=self.coefs(p4,p5)
+				while j<lps:
+					if j < p2[0]:
+						r=a1*j
+						if r>0:ADSRPool3[i][j]=r
+						else:ADSRPool3[i][j]=0
+						x=j
+					elif p2[0] <= j <= p3[0]:
+						r=a2*(j-x)+ADSRPool3[i][x]
+						if r>0: ADSRPool3[i][j]=r
+						else:ADSRPool3[i][j]=0
+						x=j
+					elif p3[0] <= j <= p4[0]:
+						r=a3*(j-x)+ADSRPool3[i][x]
+						if r>0: ADSRPool3[i][j]=r
+						else:ADSRPool3[i][j]=0
+						x=j
+					elif p4[0] <= j <= p5[0]:
+						r=a4*(j-x)+ADSRPool3[i][x]
+						if r>0: ADSRPool3[i][j]=r
+						else:ADSRPool3[i][j]=0
+						x=j
+					elif i>p5[0]:ADSRPool3[i][j]=0
+					j+=1
+			i+=1
+		#print("adsr",ADSRPool3)
+		q12.put(ADSRPool3)	
+
+
+	def coefs(self,p1,p2):
+		coef=(p2[1]-p1[1])/(p2[0]-p1[0])*5
+		#print(coef)
+		return coef
 
 	def up(self):
 		global rangeFile
-		if rangeFile<21:
+		if rangeFile<6:
 			rangeFile+=1
 			self.b5001.text=str(rangeFile*4+1)
 			self.b5002.text=str(rangeFile*4+2)
@@ -2900,41 +3162,36 @@ class LFOScreen(Screen):
 			self.b001.state="normal"
 			self.b001.text="%s"%(icon('icon-play', 22))
 		global Lline1
-		#global Lline2
-		#global Lline3
 		global Lline4
-		#global Lline5
-		#global Lline6	
 		global Lline7											
-		Lline1 = self.ids.w_canvas.canvas.get_group('a')[0]
-		#Lline2 = self.ids.w_canvas.canvas.get_group('c')[0]
-		#Lline3 = self.ids.w_canvas.canvas.get_group('d')[0]				
+		Lline1 = self.ids.w_canvas.canvas.get_group('a')[0]			
 		Lline4 = self.ids.w_canvas.canvas.get_group('b')[0]
-		#Lline5 = self.ids.w_canvas.canvas.get_group('e')[0]
-		#Lline6 = self.ids.w_canvas.canvas.get_group('f')[0]
-		Lline7 = self.ids.w_canvas.canvas.get_group('g')[0]					
-		global LFOcoord
-		global LFOcoordPool
+		Lline7 = self.ids.w_canvas.canvas.get_group('g')[0]
 		global trackmode
-		LFOcoordPool=[[52,15,400,385,748,15,55,100],[52,15,400,385,748,15,55,100],[52,15,400,385,748,15,55,100],[52,15,400,385,748,15,55,100],[52,15,400,385,748,15,55,100],[52, 83, 540, 317, 748, 83, 175, 60]]
-		LFOcoord=LFOcoordPool[trackselected-1]
-		trackmode=[1,2,3,1,1,1,1,1,1,1,1,1,1,1,1,1] #1=seq, 2=LFO, 3=ADSR
-		self.display()
+		global loopsize
+		if trackmode[trackselected-1]!=2:
+			loopsize[trackselected-1]=64
+			self.reset()
+		trackmode[trackselected-1]=2
+		print('trackmode',trackmode[trackselected-1])
 		global lfobutmode
 		lfobutmode=6
 		print(trackselected-1)
+		self.LoopSdisplay()
+		self.b025.pos[0]=Phase[trackselected-1]
+		self.clearsequence()
+		self.deleteADSR()
+		self.move_button(Lline7.pos[1])
 
-	def display(self):
-		global LFOcoordPool
-		Lline1.points=[(LFOcoord[0],LFOcoord[1]),(LFOcoord[2],LFOcoord[3])]
-		Lline4.points=[(LFOcoord[2],LFOcoord[3]),(LFOcoord[4],LFOcoord[5])]
-		self.b023.pos=(LFOcoord[2]-20,180)
-		self.b024.pos=(17,LFOcoord[3]-20)
-		self.b024.text=str(LFOcoord[7])
-		self.b025.pos[0]=LFOcoord[6]
-		Lline7.pos=(LFOcoord[2]-10,LFOcoord[3]-10)		
-		LFOcoordPool[trackselected-1]=LFOcoord
-		print(LFOcoordPool)
+	def clearsequence(self):
+		global sequencepool2
+		global sequencepool3
+		sequencepool2[trackselected-1]=[]
+		for i,elem in enumerate(sequencepool3[trackselected-1]): sequencepool3[trackselected-1][i]=[]
+		q1.put(sequencepool2)
+		q6.put(sequencepool3[trackselected-1])
+		#print(sequencepool3[trackselected-1])
+
 
 	def leaving(self):
 		Clock.unschedule(self.listening)
@@ -2947,11 +3204,9 @@ class LFOScreen(Screen):
 			self.b009.pos= 648,301
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
-			self.b013.pos= 344,900
-			self.b014.pos= 344,900
-			self.b016.pos= 344,900
-			self.b020.pos= 344,900
-			self.b022.pos= 344,900			
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b013.pos= 344,900		
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -2968,10 +3223,8 @@ class LFOScreen(Screen):
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b013.pos= 344,900
-			self.b014.pos= 344,900
-			self.b016.pos= 344,900
-			self.b020.pos= 344,900
-			self.b022.pos= 344,900			
+			self.b014.pos= 496,242	
+			self.b015.pos= 496,183			
 			self.b007.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -2979,32 +3232,24 @@ class LFOScreen(Screen):
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
 			self.b010.pos= 1000,0
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
 
 	def tools(self):
 		if self.b005.state=="down":
-			self.b013.pos= 344,360
-			#self.b014.pos= 344,301
-			#self.b016.pos= 344,242
-			#self.b020.pos= 344,183
-			#self.b022.pos= 344,124			
+			self.b013.pos= 344,360		
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b007.state="normal"
 			self.b006.state="normal"
 			self.b010.pos= 0,0
 		else:
-			self.b013.pos= 344,900
-			self.b014.pos= 344,900
-			self.b016.pos= 344,900
-			self.b020.pos= 344,900
-			self.b022.pos= 344,900			
-			self.b010.pos= 1000,0
-
-	def recording(self):
-		if self.b022.text=='REC OFF': self.b022.text='REC ON'
-		else: self.b022.text='REC OFF'			
+			self.b013.pos= 344,900			
+			self.b010.pos= 1000,0	
 
 
 	def mode(self,num):
@@ -3090,53 +3335,28 @@ class LFOScreen(Screen):
 		playing=0
 
 	def reset(self):
-		global LFOcoord
-		LFOcoord=[52,15,400,385,748,15,55,100]
-		self.display()
+		global EnvPool2
+		EnvPool2[trackselected-1]=[[400,380]]
+		self.UIrefresh(EnvPool2[trackselected-1])
+		self.updateEnv()
+		self.convert2to3()
+		self.move_button(Lline7.pos[1])		
 
+	def delete(self):
+		global EnvPool2
+		global EnvPool3
+		EnvPool2[trackselected-1]=[0]
+		EnvPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+		#print("deleted",EnvPool3[trackselected-1])
+		#print("EnvPool0",EnvPool0)
+		q7.put(EnvPool3[trackselected-1])
 
-	def rgt(self):
-		global LFOcoord
-		if LFOcoord[2]<730:
-			LFOcoord[2]+=20
-			self.display()
-
-	def lft(self):
-		global LFOcoord
-		if LFOcoord[2]>70:
-			LFOcoord[2]+=-20
-			self.display()
-
-	def up(self):
-		global LFOcoord
-		if int(self.b024.text)>10:
-			LFOcoord[1]+=17
-			LFOcoord[3]+=-17
-			LFOcoord[5]+=17
-			LFOcoord[7]+=-10	
-			self.display()
-
-	def dw(self):
-		global LFOcoord
-		if int(self.b024.text)<100:		
-			LFOcoord[1]+=-17
-			LFOcoord[3]+=17
-			LFOcoord[5]+=-17
-			LFOcoord[7]+=10				
-			self.display()
-
-	def strl(self):
-		global LFOcoord
-		if self.b025.pos[0]>70:
-			LFOcoord[6]+=-20
-			self.display()
-
-
-	def strr(self):
-		global LFOcoord
-		if self.b025.pos[0]<730:
-			LFOcoord[6]+=20
-			self.display()
+	def deleteADSR(self):
+		global ADSRPool2
+		global ADSRPool3
+		ADSRPool2[trackselected-1]=[0]
+		ADSRPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+		q8.put(ADSRPool3[trackselected-1])
 
 
 	def listening(self,*args):
@@ -3193,10 +3413,10 @@ class LFOScreen(Screen):
 				wheel+=1
 				if wheel==2:
 					wheel=0
-					if loopsize[trackselected-1]<64*16:
+					if loopsize[trackselected-1]<16*16:
 						loopsize[trackselected-1]+=16
-						q2.put(loopsize)
-						self.LoopSdisplay()
+						q2.put(loopsize)	
+						self.LoopSdisplay()				
 			elif encodervalue<0:
 				wheel+=1
 				if wheel==2:
@@ -3215,33 +3435,16 @@ class LFOScreen(Screen):
 				wheel+=1
 				if wheel==2:
 					wheel=0
-					self.strr()
+					self.Phase(20)
 			elif encodervalue<0:
 				self.closemenus()
 				wheel+=1
 				if wheel==2:
 					wheel=0
-					self.strl()
+					self.Phase(-20)
 			if encoderpushed==1:
 				lfobutmode=0
 				self.b025.state='normal'
-				self.closemenus()
-		if lfobutmode==5:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.up()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.dw()
-			if encoderpushed==1:
-				lfobutmode=0
-				self.b024.state='normal'
 				self.closemenus()
 		global playing
 		if v6.value==1:
@@ -3254,6 +3457,92 @@ class LFOScreen(Screen):
 			self.b001.state='normal'
 			playing=0
 			v6.value=2
+
+	def on_touch_move(self, touch):
+			global EnvPool2
+			global buttonpos 
+			buttonpos=touch.pos[1]-10
+			if 50 <= touch.pos[0] <= 750:
+				if 20 <= touch.pos[1] <= 380:
+					self.UIrefresh([touch.pos])
+					self.move_button(Lline7.pos[1])
+					self.updateEnv()
+
+	def encadrement_lfo(self, x, y, buttonpos):
+		txt = (buttonpos-x)*(100.0/(y-x))
+		return txt
+
+
+	def move_button(self, buttonpos):
+		txt=self.encadrement_lfo(190, 370, buttonpos)
+		if buttonpos >= 190:
+			self.b024.pos=(1,buttonpos)
+			self.b024.text=str(int(txt))
+		elif buttonpos < 190:			
+			self.b024.pos=(1,380 - buttonpos)
+			self.b024.text=str(int(-1 * txt))
+
+	def UIrefresh(self,Coord):
+		Lline7.pos=(Coord[0][0]-10,Coord[0][1]-10)	
+		Lline1.points=[(50,400 - Coord[0][1]),(Coord[0][0],Coord[0][1])]
+		Lline4.points=[(750,400 - Coord[0][1]),(Coord[0][0],Coord[0][1])]
+
+
+	def updateEnv(self):
+		global EnvPool2
+		EnvPool2[trackselected-1]=[]
+		EnvPool2[trackselected-1].append([Lline7.pos[0],Lline7.pos[1]])
+		#print(EnvPool2)
+		self.convert2to3()
+
+
+	def convert2to3(self):
+		global EnvPool2
+		global EnvPool3
+		#print(EnvPool2)
+		X=(((EnvPool2[trackselected-1][0][0]-40)/700)+0.001)*loopsize[trackselected-1]
+		Y=((EnvPool2[trackselected-1][0][1]-195.2)/37)
+		a1=2*Y/X
+		b1=-Y
+		a2=2*Y/(X-loopsize[trackselected-1]+1)
+		b2=Y-a2*X
+		#print(X,Y)
+		#print(a1,b1,a2,b2)
+		PHASE=(Phase[trackselected-1]+0.001-40)/700*loopsize[trackselected-1]-1.37
+		#print(PHASE)
+		i=0
+		
+		while i<loopsize[trackselected-1]:
+			n=(i+PHASE)%loopsize[trackselected-1]
+			if n<X:
+				EnvPool3[trackselected-1][i]=(a1*n+b1)*3/5
+			else:
+				EnvPool3[trackselected-1][i]=(a2*n+b2)*3/5
+			i+=1
+		q7.put(EnvPool3[trackselected-1])
+		#print(EnvPool3[trackselected-1])
+		#print(EnvPool3[trackselected-1][0],EnvPool3[trackselected-1][63])		
+
+
+	def LoopSdisplay(self):
+		self.l1.text=str(loopsize[trackselected-1]/16)
+		self.convert2to3()
+		self.b004.text=str(loopsize[trackselected-1]/16)
+
+	def Phase(self,move):
+		global Phase
+		if move <0 and self.b025.pos[0]>70 or move >0 and self.b025.pos[0]<730:
+			self.b025.pos[0]+=move
+			Phase[trackselected-1]=self.b025.pos[0]
+			#print(Phase[trackselected-1])
+			self.convert2to3()
+
+
+	def test1(self):
+		self.Phase(20)
+
+	def test2(self):
+		self.Phase(-20)
 
 
 ##############################################################################################
@@ -3290,44 +3579,83 @@ class ADSRScreen(Screen):
 		global Lline4
 		global Lline5
 		global Lline6	
-		global Lline7									
+		global Lline7
+		global Lline8									
 		Lline1 = self.ids.w_canvas.canvas.get_group('a')[0]
 		Lline2 = self.ids.w_canvas.canvas.get_group('b')[0]
 		Lline3 = self.ids.w_canvas.canvas.get_group('c')[0]				
 		Lline4 = self.ids.w_canvas.canvas.get_group('d')[0]
 		Lline5 = self.ids.w_canvas.canvas.get_group('e')[0]
 		Lline6 = self.ids.w_canvas.canvas.get_group('f')[0]
-		Lline7 = self.ids.w_canvas.canvas.get_group('g')[0]	
-		global ADSRcoord
-		global ADSRcoordPool
-		global trackmode
-		ADSRcoordPool=[[52, 30, 100, 385, 150, 200, 300, 200, 500, 30, 100, 50],[52,15,400,385,748,15,55,100],[52,15,400,385,748,15,55,100],[52,15,400,385,748,15,55,100],[52,15,400,385,748,15,55,100],[52, 83, 540, 317, 748, 83, 175, 60]]
-		ADSRcoord=ADSRcoordPool[trackselected-1]
-		trackmode=[1,2,3,1,1,1,1,1,1,1,1,1,1,1,1,1] #1=seq, 2=LFO, 3=ADSR
-		self.display()
+		Lline7 = self.ids.w_canvas.canvas.get_group('g')[0]
+		Lline8 = self.ids.w_canvas.canvas.get_group('h')[0]		
+
 		global adsrbutmode
 		adsrbutmode=0
 		print(trackselected-1)
+		global trackmode
+		global loopsize
+		if trackmode[trackselected-1]!=3:
+			loopsize[trackselected-1]=64
+			self.reset()
+		trackmode[trackselected-1]=3
+		print('trackmode',trackmode[trackselected-1])
+		self.triginfo()
+		self.clearsequence()
+		self.deleteLFO()
+		self.UIrefresh()
+		self.LoopSdisplay()
 
-	def display(self):
-		global ADSRcoordPool
-		Lline1.points=[(ADSRcoord[0],ADSRcoord[1]),(ADSRcoord[2],ADSRcoord[3])]
-		Lline2.points=[(ADSRcoord[2],ADSRcoord[3]),(ADSRcoord[4],ADSRcoord[5])]
-		Lline3.points=[(ADSRcoord[4],ADSRcoord[5]),(ADSRcoord[6],ADSRcoord[7])]
-		Lline4.points=[(ADSRcoord[6],ADSRcoord[7]),(ADSRcoord[8],ADSRcoord[9])]				
-		self.b023.pos=(ADSRcoord[2]-20,13)
-		self.b024.pos=(17,ADSRcoord[3]-20)
-		self.b024.text=str(ADSRcoord[10])
-		self.b028.pos=(17,ADSRcoord[5]-20)
-		self.b028.text=str(ADSRcoord[11])
-		self.b025.pos=(ADSRcoord[4]-20,13)
-		self.b026.pos=(ADSRcoord[6]-20,13)
-		self.b027.pos=(ADSRcoord[8]-20,13)
-		ADSRcoordPool[trackselected-1]=ADSRcoord
-		Lline5.pos=(ADSRcoord[2]-10,ADSRcoord[3]-10)
-		Lline6.pos=(ADSRcoord[4]-10,ADSRcoord[5]-10)
-		Lline7.pos=(ADSRcoord[6]-10,ADSRcoord[7]-10)		
-		print(ADSRcoordPool)
+	def clearsequence(self):
+		global sequencepool2
+		global sequencepool3
+		sequencepool2[trackselected-1]=[]
+		for i,elem in enumerate(sequencepool3[trackselected-1]): sequencepool3[trackselected-1][i]=[]
+		q1.put(sequencepool2)
+		q6.put(sequencepool3[trackselected-1])
+		#print(sequencepool3[trackselected-1])
+
+
+	def deleteLFO(self):
+		global EnvPool2
+		global EnvPool3
+		EnvPool2[trackselected-1]=[0]
+		EnvPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+		#print("deleted",EnvPool3[trackselected-1])
+		#print("EnvPool0",EnvPool0)
+		q7.put(EnvPool3[trackselected-1])
+
+	def deleteADSR(self):
+		global ADSRPool2
+		global ADSRPool3
+		ADSRPool2[trackselected-1]=[0]
+		ADSRPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+		q8.put(ADSRPool3[trackselected-1])
+
+
+
+	def closemenu(self):
+		self.b5017.pos=1329,305
+		self.b5000.pos=1228,61
+		self.b5001.pos=1229,245
+		self.b5005.pos=1229,184
+		self.b5009.pos=1229,123
+		self.b5013.pos=1229,62
+		self.b5002.pos=1329,245
+		self.b5006.pos=1329,184
+		self.b5010.pos=1329,123
+		self.b5014.pos=1329,62
+		self.b5003.pos=1429,245
+		self.b5007.pos=1429,184
+		self.b5011.pos=1429,123
+		self.b5015.pos=1429,62
+		self.b5004.pos=1529,245
+		self.b5008.pos=1529,184
+		self.b5012.pos=1529,123
+		self.b5016.pos=1529,62
+		self.b3005.pos=1000,0
+
+
 
 	def leaving(self):
 		Clock.unschedule(self.listening)
@@ -3344,7 +3672,9 @@ class ADSRScreen(Screen):
 			self.b014.pos= 344,900
 			self.b016.pos= 344,900
 			self.b020.pos= 344,900
-			self.b022.pos= 344,900			
+			self.b022.pos= 344,900	
+			self.b018.pos= 496,900	
+			self.b019.pos= 496,900			
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -3364,19 +3694,23 @@ class ADSRScreen(Screen):
 			self.b014.pos= 344,900
 			self.b016.pos= 344,900
 			self.b020.pos= 344,900
-			self.b022.pos= 344,900			
+			self.b022.pos= 344,900
+			self.b018.pos= 496,242	
+			self.b019.pos= 496,183				
 			self.b007.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
 		else:
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
+			self.b018.pos= 496,900	
+			self.b019.pos= 496,900	
 			self.b010.pos= 1000,0
 
 	def tools(self):
 		if self.b005.state=="down":
 			self.b013.pos= 344,360
-			#self.b014.pos= 344,301
+			self.b014.pos= 344,301
 			#self.b016.pos= 344,242
 			#self.b020.pos= 344,183
 			#self.b022.pos= 344,124			
@@ -3384,6 +3718,8 @@ class ADSRScreen(Screen):
 			self.b012.pos= 496,900
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
+			self.b018.pos= 496,900	
+			self.b019.pos= 496,900	
 			self.b007.state="normal"
 			self.b006.state="normal"
 			self.b010.pos= 0,0
@@ -3395,10 +3731,65 @@ class ADSRScreen(Screen):
 			self.b022.pos= 344,900			
 			self.b010.pos= 1000,0
 
-	def recording(self):
-		if self.b022.text=='REC OFF': self.b022.text='REC ON'
-		else: self.b022.text='REC OFF'			
 
+	def trig(self):
+		self.b5017.pos=310,305
+		self.b5017.text="ADSR TRIGGERED BY TRACK:"
+		self.b5000.pos=138,31
+		self.b5001.pos=139,236
+		self.b5005.pos=139,168
+		self.b5009.pos=139,100
+		self.b5013.pos=139,32
+		self.b5002.pos=269,236
+		self.b5006.pos=269,168
+		self.b5010.pos=269,100
+		self.b5014.pos=269,32
+		self.b5003.pos=399,236
+		self.b5007.pos=399,168
+		self.b5011.pos=399,100
+		self.b5015.pos=399,32
+		self.b5004.pos=529,236
+		self.b5008.pos=529,168
+		self.b5012.pos=529,100
+		self.b5016.pos=529,32
+		self.b3005.pos=0,0
+		self.b5001.text="1"
+		self.b5005.text="5"
+		self.b5009.text="9"
+		self.b5013.text="13"
+		self.b5002.text="2"
+		self.b5006.text="6"
+		self.b5010.text="10"
+		self.b5014.text="14"
+		self.b5003.text="3"
+		self.b5007.text="7"
+		self.b5011.text="11"
+		self.b5015.text="15"
+		self.b5004.text="4"
+		self.b5008.text="8"
+		self.b5012.text="12"
+		self.b5016.text="16"
+
+	def port2(self,button):
+		global ADSRtrig
+		for key, val in list(self.ids.items()):
+			if val==button:
+				ID=key
+		new=int((ID[-2:]))
+		#print(new)
+		for n,value in enumerate(ADSRtrig):
+			if trackselected==value:ADSRtrig[n]=0
+		ADSRtrig[new-1]=trackselected
+		#print(ADSRtrig)
+		q9.put(ADSRtrig)
+		self.triginfo()
+	
+	def triginfo(self):
+		self.b014.text="TRIG: NONE"
+		for n,value in enumerate(ADSRtrig):
+			if value==trackselected:
+				trig=n+1
+				self.b014.text="TRIG: "+str(trig)
 
 	def mode(self,num):
 		global adsrbutmode
@@ -3505,100 +3896,10 @@ class ADSRScreen(Screen):
 		playing=0
 
 	def reset(self):
-		global ADSRcoord
-		ADSRcoord=[52, 30, 100, 385, 150, 200, 300, 200, 500, 30, 100, 50]
-		self.display()
-
-
-	def rgt(self):
-		global ADSRcoord
-		if ADSRcoord[2]<730:
-			ADSRcoord[2]+=20
-			ADSRcoord[4]+=20
-			ADSRcoord[6]+=20
-			ADSRcoord[8]+=20
-			self.display()
-
-	def lft(self):
-		global ADSRcoord
-		if ADSRcoord[2]>70:
-			ADSRcoord[2]+=-20
-			ADSRcoord[4]+=-20
-			ADSRcoord[6]+=-20
-			ADSRcoord[8]+=-20			
-			self.display()
-
-	def strl(self):
-		global ADSRcoord
-		if self.b025.pos[0]>self.b023.pos[0]+50:
-			ADSRcoord[4]+=-20
-			ADSRcoord[6]+=-20			
-			ADSRcoord[8]+=-20			
-			self.display()
-
-	def strr(self):
-		global ADSRcoord
-		if self.b025.pos[0]<730:
-			ADSRcoord[4]+=20
-			ADSRcoord[6]+=20			
-			ADSRcoord[8]+=20	
-			self.display()
-
-	def strll(self):
-		global ADSRcoord
-		if self.b026.pos[0]>self.b025.pos[0]+50:
-			ADSRcoord[6]+=-20			
-			ADSRcoord[8]+=-20			
-			self.display()
-
-	def strrr(self):
-		global ADSRcoord
-		if self.b026.pos[0]<730:
-			ADSRcoord[6]+=20			
-			ADSRcoord[8]+=20	
-			self.display()
-
-	def strlll(self):
-		global ADSRcoord
-		if self.b027.pos[0]>self.b026.pos[0]+50:		
-			ADSRcoord[8]+=-20			
-			self.display()
-
-	def strrrr(self):
-		global ADSRcoord
-		if self.b027.pos[0]<730:			
-			ADSRcoord[8]+=20	
-			self.display()
-
-	def up(self):
-		global ADSRcoord
-		if int(self.b024.text)<100:
-			ADSRcoord[3]+=34
-			ADSRcoord[10]+=10	
-			self.display()
-
-	def dw(self):
-		global ADSRcoord
-		if int(self.b024.text)>int(self.b028.text) and int(self.b024.text)>20:		
-			ADSRcoord[3]+=-34
-			ADSRcoord[10]+=-10			
-			self.display()
-
-	def up2(self):
-		global ADSRcoord
-		if int(self.b028.text)<int(self.b024.text):
-			ADSRcoord[5]+=34
-			ADSRcoord[7]+=34
-			ADSRcoord[11]+=10	
-			self.display()
-
-	def dw2(self):
-		global ADSRcoord
-		if int(self.b028.text)>10:		
-			ADSRcoord[5]+=-34
-			ADSRcoord[7]+=-34
-			ADSRcoord[11]+=-10			
-			self.display()
+		global ADSRPool2
+		ADSRPool2[trackselected-1]=[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0]
+		self.UIrefresh()
+		self.convert2to3()
 
 
 	def listening(self,*args):
@@ -3611,23 +3912,7 @@ class ADSRScreen(Screen):
 		w1.value=0
 		step=v2.value
 		if adsrbutmode==0: pass
-		if adsrbutmode==1:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.rgt()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.lft()
-			if encoderpushed==1:
-				adsrbutmode=0
-				self.b023.state='normal'
-				self.closemenus()
+
 
 		if adsrbutmode==2:
 			if encodervalue>0:
@@ -3656,7 +3941,7 @@ class ADSRScreen(Screen):
 				wheel+=1
 				if wheel==2:
 					wheel=0
-					if loopsize[trackselected-1]<64*16:
+					if loopsize[trackselected-1]<16*16:
 						loopsize[trackselected-1]+=16
 						q2.put(loopsize)
 						self.LoopSdisplay()
@@ -3664,7 +3949,7 @@ class ADSRScreen(Screen):
 				wheel+=1
 				if wheel==2:
 					wheel=0
-					if loopsize[trackselected-1]>16:
+					if loopsize[trackselected-1]>64:
 						loopsize[trackselected-1]-=16
 						q2.put(loopsize)
 						self.LoopSdisplay()
@@ -3672,95 +3957,7 @@ class ADSRScreen(Screen):
 				adsrbutmode=0
 				self.b004.state='normal'
 
-		if adsrbutmode==4:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.strr()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.strl()
-			if encoderpushed==1:
-				adsrbutmode=0
-				self.b025.state='normal'
-				self.closemenus()
-
-		if adsrbutmode==5:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.up()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.dw()
-			if encoderpushed==1:
-				adsrbutmode=0
-				self.b024.state='normal'
-				self.closemenus()				
-
-		if adsrbutmode==6:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.up2()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.dw2()
-			if encoderpushed==1:
-				adsrbutmode=0
-				self.b028.state='normal'
-				self.closemenus()
-
-		if adsrbutmode==7:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.strrr()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.strll()
-			if encoderpushed==1:
-				adsrbutmode=0
-				self.b026.state='normal'
-				self.closemenus()
-
-		if adsrbutmode==8:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.strrrr()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.strlll()
-			if encoderpushed==1:
-				adsrbutmode=0
-				self.b027.state='normal'
-				self.closemenus()								
+							
 		global playing
 		if v6.value==1:
 			v6.value=2
@@ -3772,6 +3969,766 @@ class ADSRScreen(Screen):
 			self.b001.state='normal'
 			playing=0
 			v6.value=2
+
+	def LoopSdisplay(self):
+		self.l1.text=str(loopsize[trackselected-1]/16)
+		self.convert2to3()
+		self.b004.text=str(loopsize[trackselected-1]/16)
+
+
+	def encadrement_lfo(self, x, y, buttonpos):
+		
+		txt = (buttonpos-x)*(100.0/(y-x))
+		return txt
+
+
+	def move_button(self, buttonpos):
+		#txt = (buttonpos - 190) * (100/180)
+		txt=self.encadrement_lfo(20, 370, buttonpos)
+		if buttonpos == Lline5.pos[1]:
+			self.b024.pos=(-25,buttonpos-35)
+			self.b024.text=str(int(txt))
+		if buttonpos == Lline6.pos[1]:
+			self.b028.pos=(-25,buttonpos-35)
+			self.b028.text=str(int(txt))
+		#if buttonpos == Lline7.pos[1]:
+			#self.b026.pos=(17,buttonpos)
+			#self.b026.text=str(int(txt))
+	def UIrefresh(self):
+		#print(ADSRPool2[trackselected-1])
+		Lline5.pos=(ADSRPool2[trackselected-1][0],ADSRPool2[trackselected-1][1])		
+		Lline6.pos=(ADSRPool2[trackselected-1][2],ADSRPool2[trackselected-1][3])
+		Lline7.pos=(ADSRPool2[trackselected-1][4],ADSRPool2[trackselected-1][5])
+		Lline8.pos=(ADSRPool2[trackselected-1][6],ADSRPool2[trackselected-1][7])
+		self.displaylines()		
+		self.move_button(Lline5.pos[1])
+		self.move_button(Lline6.pos[1])		
+
+
+	def on_touch_move(self, touch):
+		ecart76 = Lline7.pos[0]-Lline6.pos[0]
+		ecart75 = Lline7.pos[0]-Lline5.pos[0]
+		ecart85 = Lline8.pos[0]-Lline5.pos[0]
+		ecart86 = Lline8.pos[0]-Lline6.pos[0]
+		ecart87=Lline8.pos[0]-Lline7.pos[0]
+		ecart = Lline6.pos[0]-Lline5.pos[0]
+		rayon=50
+		#print(touch.pos)
+		if (Lline5.pos[0] - rayon) <= touch.pos[0] <= (Lline5.pos[0] + rayon):
+			if (Lline5.pos[1] - rayon) <= touch.pos[1] <= (Lline5.pos[1] + rayon):
+				if 52 <= touch.pos[0] <= Lline6.pos[0]:
+					if Lline6.pos[1]+10 <= touch.pos[1] <= 390:
+						if touch.pos[0]+ecart85 <= 750:
+								Lline5.pos=(touch.pos[0]-10,touch.pos[1]-10)
+								if Lline5.pos[1]>370:
+									Lline5.pos=(touch.pos[0]-10,370)								
+								Lline6.pos=(Lline5.pos[0]+ecart, Lline6.pos[1])
+								Lline7.pos=(Lline6.pos[0]+ecart76, Lline6.pos[1])
+								Lline8.pos=(Lline5.pos[0]+ecart85, Lline8.pos[1])
+								self.move_button(Lline5.pos[1])
+								self.updateADSR()
+						else:
+							if ecart87 >= 50:
+								Lline5.pos=(touch.pos[0]-10,touch.pos[1]-10)
+								if Lline5.pos[1]>370:
+									Lline5.pos=(touch.pos[0]-10,370)								
+								Lline6.pos=(Lline5.pos[0]+ecart, Lline6.pos[1])
+								Lline7.pos=(Lline6.pos[0]+ecart76, Lline6.pos[1])
+								Lline8.pos=(740, Lline8.pos[1])	
+								self.move_button(Lline5.pos[1])
+								self.updateADSR()
+					elif 30 <= touch.pos[1]<= 390:
+						if touch.pos[0]+ecart85 <= 750:
+								Lline5.pos=(touch.pos[0]-10,touch.pos[1]-10)
+								if Lline5.pos[1]>370:
+									Lline5.pos=(touch.pos[0]-10,370)								
+								Lline6.pos=(Lline5.pos[0]+ecart, Lline5.pos[1])
+								Lline7.pos=(Lline6.pos[0]+ecart76, Lline5.pos[1])
+								Lline8.pos=(Lline5.pos[0]+ecart85, Lline8.pos[1])
+								self.move_button(Lline5.pos[1])
+								self.updateADSR()
+						else:
+							if ecart87 >= 50:
+								Lline5.pos=(touch.pos[0]-10,touch.pos[1]-10)
+								if Lline5.pos[1]>370:
+									Lline5.pos=(touch.pos[0]-10,370)								
+								Lline6.pos=(Lline5.pos[0]+ecart, Lline5.pos[1])
+								Lline7.pos=(Lline6.pos[0]+ecart76, Lline5.pos[1])
+								Lline8.pos=(740, Lline8.pos[1])	
+								self.move_button(Lline5.pos[1])
+								self.updateADSR()
+		elif (Lline6.pos[0] - rayon) <= touch.pos[0] <= (Lline6.pos[0] + rayon):
+			if (Lline6.pos[1] - rayon) <= touch.pos[1] <= (Lline6.pos[1] + rayon):
+				if Lline5.pos[0]+10 <= touch.pos[0] <= Lline7.pos[0]+10:
+					if 29 <= touch.pos[1] <= Lline5.pos[1]+10:
+						if touch.pos[0]+ecart76 <= Lline8.pos[0]+10:
+							if touch.pos[0]+ecart86 <= 750:
+								Lline6.pos=(touch.pos[0]-10,touch.pos[1]-10)
+								Lline7.pos=(Lline6.pos[0]+ecart76, Lline6.pos[1])
+								Lline8.pos=(Lline6.pos[0]+ecart86, Lline8.pos[1])	
+								self.move_button(Lline6.pos[1])
+								self.updateADSR()
+							else:
+								if ecart87 >= 50:
+									Lline6.pos=(touch.pos[0]-10,touch.pos[1]-10)
+									Lline7.pos=(Lline6.pos[0]+ecart76, Lline6.pos[1])
+									Lline8.pos=(740, Lline8.pos[1])	
+									self.move_button(Lline6.pos[1])
+									self.updateADSR()
+		elif (Lline7.pos[0] - rayon) <= touch.pos[0] <= (Lline7.pos[0] + rayon):
+			if (Lline7.pos[1] - rayon) <= touch.pos[1] <= (Lline7.pos[1] + rayon):
+				if Lline6.pos[0]+10 <= touch.pos[0] <= Lline8.pos[0]+10:
+					if touch.pos[0] + ecart87 <= 750:
+								Lline7.pos=(touch.pos[0]-10,Lline6.pos[1])	
+								Lline8.pos=(Lline7.pos[0]+ecart87, Lline8.pos[1])	
+								self.updateADSR()
+								self.move_button(Lline7.pos[1])								
+					else:
+							if ecart87 >= 50:
+								Lline7.pos=(touch.pos[0]-10,Lline6.pos[1])	
+								Lline8.pos=(740, Lline8.pos[1])						
+								self.updateADSR()
+								self.move_button(Lline7.pos[1])
+		elif (Lline8.pos[0] - rayon) <= touch.pos[0] <= (Lline8.pos[0] + rayon):
+			if (Lline8.pos[1] - rayon) <= touch.pos[1] <= (Lline8.pos[1] + rayon):
+				if Lline7.pos[0]+10 <= touch.pos[0] <= 750:
+								Lline8.pos=(touch.pos[0]-10,19)	
+								self.move_button(Lline7.pos[1])
+								self.updateADSR()								
+		#print(Lline5.pos,Lline6.pos,Lline7.pos,Lline8.pos)
+		self.displaylines()	
+
+	def displaylines(self):
+		Lline1.points=[(52,30),(Lline5.pos[0]+10,Lline5.pos[1]+10)]
+		Lline2.points=[(Lline6.pos[0]+10, Lline6.pos[1]+10),(Lline5.pos[0]+10,Lline5.pos[1]+10)]
+		Lline3.points=[(Lline7.pos[0]+10, Lline7.pos[1]+10),(Lline6.pos[0]+10, Lline6.pos[1]+10)]
+		Lline4.points=[(Lline7.pos[0]+10, Lline7.pos[1]+10),(Lline8.pos[0]+10, Lline8.pos[1]+10)]		
+
+
+	def updateADSR(self):
+		global ADSRPool2
+		ADSRPool2[trackselected-1]=[Lline5.pos[0],Lline5.pos[1],Lline6.pos[0],Lline6.pos[1],Lline7.pos[0],Lline6.pos[1],Lline8.pos[0],Lline8.pos[1]]
+		#print(ADSRPool2[trackselected-1])
+		self.convert2to3()
+
+	def convert2to3(self):
+		#en fonction loopsize
+		global ADSRPool3
+		lps=loopsize[trackselected-1]
+		p1=[0,0]
+		p2=[(Lline5.pos[0]-41)/700*lps+1,(Lline5.pos[1])/330]
+		p3=[(Lline6.pos[0]-52)/700*lps,(Lline6.pos[1])/330]
+		p4=[(Lline7.pos[0]-52)/700*lps,(Lline7.pos[1])/330]
+		p5=[(Lline8.pos[0]-52)/700*lps,(Lline8.pos[1])/330]	
+		#print("P",p1,p2,p3,p4,p5)					
+		i=0
+		a1=self.coefs(p1,p2)
+		a2=self.coefs(p2,p3)
+		a3=self.coefs(p3,p4)
+		a4=self.coefs(p4,p5)
+		while i<lps:
+			if i < p2[0]:
+				r=a1*i
+				if r>0:ADSRPool3[trackselected-1][i]=r
+				else:ADSRPool3[trackselected-1][i]=0
+				x=i
+			elif p2[0] <= i <= p3[0]:
+				r=a2*(i-x)+ADSRPool3[trackselected-1][x]
+				if r>0: ADSRPool3[trackselected-1][i]=r
+				else:ADSRPool3[trackselected-1][i]=0
+				x=i
+			elif p3[0] <= i <= p4[0]:
+				r=a3*(i-x)+ADSRPool3[trackselected-1][x]
+				if r>0: ADSRPool3[trackselected-1][i]=r
+				else:ADSRPool3[trackselected-1][i]=0
+				x=i
+			elif p4[0] <= i <= p5[0]:
+				r=a4*(i-x)+ADSRPool3[trackselected-1][x]
+				if r>0: ADSRPool3[trackselected-1][i]=r
+				else:ADSRPool3[trackselected-1][i]=0
+				x=i	
+			elif i>p5[0]:ADSRPool3[trackselected-1][i]=0
+
+			i+=1
+		#print(ADSRPool3[trackselected-1])
+		q8.put(ADSRPool3[trackselected-1])
+
+
+
+	def coefs(self,p1,p2):
+		coef=(p2[1]-p1[1])/(p2[0]-p1[0])*5
+		#print(coef)
+		return coef
+
+
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+
+class RandomScreen(Screen):
+
+	def on_enter(self):
+		w1.value=0
+		Clock.schedule_interval(self.listening, 0.002)
+		self.b003.text=str(BPM)
+		if playing==1:
+			self.b001.state="down"
+			self.b001.text="%s"%(icon('icon-pause', 22))
+		else:
+			self.b001.state="normal"
+			self.b001.text="%s"%(icon('icon-play', 22))											
+		global trackmode
+		global loopsize
+		trackmode[trackselected-1]=2
+		print('trackmode',trackmode[trackselected-1])
+		global lfobutmode
+		lfobutmode=6
+		print(trackselected-1)
+		
+
+
+	def leaving(self):
+		Clock.unschedule(self.listening)
+		print("unschedule seq")
+
+
+	def menu(self):
+		if self.b007.state=="down":
+			self.b008.pos= 648,360
+			self.b009.pos= 648,301
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b013.pos= 344,900		
+			self.b006.state="normal"
+			self.b005.state="normal"
+			self.b010.pos= 0,0
+		else:
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b010.pos= 1000,0
+
+
+	def seqmode(self):
+		if self.b006.state=="down":
+			self.b011.pos= 496,360
+			self.b012.pos= 496,301
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b013.pos= 344,900
+			self.b014.pos= 496,242	
+			self.b015.pos= 496,183			
+			self.b007.state="normal"
+			self.b005.state="normal"
+			self.b010.pos= 0,0
+		else:
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b010.pos= 1000,0
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+
+	def tools(self):
+		if self.b005.state=="down":
+			self.b013.pos= 344,360		
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b007.state="normal"
+			self.b006.state="normal"
+			self.b010.pos= 0,0
+		else:
+			self.b013.pos= 344,900			
+			self.b010.pos= 1000,0	
+
+
+	def mode(self,num):
+		global lfobutmode
+		if num==1:
+			if lfobutmode==1:
+				lfobutmode=0
+				self.b020.state='normal'
+			else:
+				lfobutmode=1
+				self.b020.state='down'
+				w2.value=0
+		if num==2:
+			if lfobutmode==2:
+				lfobutmode=0
+				self.b003.state='normal'
+			else:
+				lfobutmode=2
+				self.b003.state='down'
+				w2.value=0
+		if num==3:
+			if lfobutmode==3:
+				lfobutmode=0
+				self.b004.state='normal'
+			else:
+				lfobutmode=3
+				self.b004.state='down'
+				w2.value=0
+		if num==4:
+			if lfobutmode==4:
+				lfobutmode=0
+				self.b025.state='normal'
+			else:
+				lfobutmode=4
+				self.b025.state='down'
+				w2.value=0
+		if num==5:
+			if lfobutmode==5:
+				lfobutmode=0
+				self.b024.state='normal'
+			else:
+				lfobutmode=5
+				self.b024.state='down'
+				w2.value=0				
+		if num==6:
+			lfobutmode=6
+			self.b003.state='normal'
+			self.b004.state='normal'
+			self.b020.state='normal'
+		print(("buton mode",lfobutmode))
+
+
+
+	def closemenus(self):
+		if self.b007.state=="down":
+			self.b007.state="normal"
+			self.menu()
+		if self.b006.state=="down":
+			self.b006.state="normal"
+			self.seqmode()
+		if self.b005.state=="down":
+			self.b005.state="normal"
+			self.tools()
+
+	def start(self):
+		global playing
+		if self.b001.state=="down":
+			v1.value=1
+			playing=1
+			self.b001.text="%s"%(icon('icon-pause', 22))
+		else:
+			self.b001.text="%s"%(icon('icon-play', 22))
+			playing=0
+			v1.value=2
+
+
+	def stop(self):
+		global playing
+		self.b001.state="normal"
+		self.b001.text="%s"%(icon('icon-play', 22))
+		v1.value=0
+		playing=0
+
+
+	def listening(self,*args):
+		global wheel
+		global lfobutmode
+		global loopsize
+		global BPM
+		encodervalue=w1.value
+		encoderpushed=w2.value
+		w1.value=0
+		step=v2.value
+		if lfobutmode==0: pass
+		if lfobutmode==1:
+			if encodervalue>0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.rgt()
+			elif encodervalue<0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.lft()
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b023.state='normal'
+				self.closemenus()
+
+		if lfobutmode==2:
+			if encodervalue>0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if BPM<200:
+						BPM+=1
+						self.b003.text=str(BPM)
+						v4.value=BPM
+			elif encodervalue<0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if BPM>30:
+						BPM-=1
+						self.b003.text=str(BPM)
+						v4.value=BPM
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b003.state='normal'
+
+		if lfobutmode==3:
+			if encodervalue>0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if loopsize[trackselected-1]<16*16:
+						loopsize[trackselected-1]+=16
+						q2.put(loopsize)	
+						self.LoopSdisplay()				
+			elif encodervalue<0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if loopsize[trackselected-1]>16:
+						loopsize[trackselected-1]-=16
+						q2.put(loopsize)
+						self.LoopSdisplay()
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b004.state='normal'
+
+		if lfobutmode==4:
+			if encodervalue>0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.Phase(20)
+			elif encodervalue<0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.Phase(-20)
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b025.state='normal'
+				self.closemenus()
+		global playing
+		if v6.value==1:
+			v6.value=2
+			playing=1
+			self.b001.text="%s"%(icon('icon-pause', 22))
+			self.b001.state='down'
+		elif v6.value==0:
+			self.b001.text="%s"%(icon('icon-play', 22))
+			self.b001.state='normal'
+			playing=0
+			v6.value=2
+
+	def label1(self, *args):
+
+		self.sld1.value=int(args[1])
+		print(self.sld1.value)
+		self.lbl1.text=str(int(self.sld1.value))
+
+		
+
+
+
+
+
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+
+class EuclideanScreen(Screen):
+
+	def on_enter(self):
+		w1.value=0
+		Clock.schedule_interval(self.listening, 0.002)
+		self.b003.text=str(BPM)
+		if playing==1:
+			self.b001.state="down"
+			self.b001.text="%s"%(icon('icon-pause', 22))
+		else:
+			self.b001.state="normal"
+			self.b001.text="%s"%(icon('icon-play', 22))											
+		global trackmode
+		global loopsize
+		trackmode[trackselected-1]=2
+		print('trackmode',trackmode[trackselected-1])
+		global lfobutmode
+		lfobutmode=6
+		print(trackselected-1)
+		
+
+
+	def leaving(self):
+		Clock.unschedule(self.listening)
+		print("unschedule seq")
+
+
+	def menu(self):
+		if self.b007.state=="down":
+			self.b008.pos= 648,360
+			self.b009.pos= 648,301
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b013.pos= 344,900		
+			self.b006.state="normal"
+			self.b005.state="normal"
+			self.b010.pos= 0,0
+		else:
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b010.pos= 1000,0
+
+
+	def seqmode(self):
+		if self.b006.state=="down":
+			self.b011.pos= 496,360
+			self.b012.pos= 496,301
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b013.pos= 344,900
+			self.b014.pos= 496,242	
+			self.b015.pos= 496,183			
+			self.b007.state="normal"
+			self.b005.state="normal"
+			self.b010.pos= 0,0
+		else:
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b010.pos= 1000,0
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+
+	def tools(self):
+		if self.b005.state=="down":
+			self.b013.pos= 344,360		
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b007.state="normal"
+			self.b006.state="normal"
+			self.b010.pos= 0,0
+		else:
+			self.b013.pos= 344,900			
+			self.b010.pos= 1000,0	
+
+
+	def mode(self,num):
+		global lfobutmode
+		if num==1:
+			if lfobutmode==1:
+				lfobutmode=0
+				self.b020.state='normal'
+			else:
+				lfobutmode=1
+				self.b020.state='down'
+				w2.value=0
+		if num==2:
+			if lfobutmode==2:
+				lfobutmode=0
+				self.b003.state='normal'
+			else:
+				lfobutmode=2
+				self.b003.state='down'
+				w2.value=0
+		if num==3:
+			if lfobutmode==3:
+				lfobutmode=0
+				self.b004.state='normal'
+			else:
+				lfobutmode=3
+				self.b004.state='down'
+				w2.value=0
+		if num==4:
+			if lfobutmode==4:
+				lfobutmode=0
+				self.b025.state='normal'
+			else:
+				lfobutmode=4
+				self.b025.state='down'
+				w2.value=0
+		if num==5:
+			if lfobutmode==5:
+				lfobutmode=0
+				self.b024.state='normal'
+			else:
+				lfobutmode=5
+				self.b024.state='down'
+				w2.value=0				
+		if num==6:
+			lfobutmode=6
+			self.b003.state='normal'
+			self.b004.state='normal'
+			self.b020.state='normal'
+		print(("buton mode",lfobutmode))
+
+
+
+	def closemenus(self):
+		if self.b007.state=="down":
+			self.b007.state="normal"
+			self.menu()
+		if self.b006.state=="down":
+			self.b006.state="normal"
+			self.seqmode()
+		if self.b005.state=="down":
+			self.b005.state="normal"
+			self.tools()
+
+	def start(self):
+		global playing
+		if self.b001.state=="down":
+			v1.value=1
+			playing=1
+			self.b001.text="%s"%(icon('icon-pause', 22))
+		else:
+			self.b001.text="%s"%(icon('icon-play', 22))
+			playing=0
+			v1.value=2
+
+
+	def stop(self):
+		global playing
+		self.b001.state="normal"
+		self.b001.text="%s"%(icon('icon-play', 22))
+		v1.value=0
+		playing=0
+
+
+	def listening(self,*args):
+		global wheel
+		global lfobutmode
+		global loopsize
+		global BPM
+		encodervalue=w1.value
+		encoderpushed=w2.value
+		w1.value=0
+		step=v2.value
+		if lfobutmode==0: pass
+		if lfobutmode==1:
+			if encodervalue>0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.rgt()
+			elif encodervalue<0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.lft()
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b023.state='normal'
+				self.closemenus()
+
+		if lfobutmode==2:
+			if encodervalue>0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if BPM<200:
+						BPM+=1
+						self.b003.text=str(BPM)
+						v4.value=BPM
+			elif encodervalue<0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if BPM>30:
+						BPM-=1
+						self.b003.text=str(BPM)
+						v4.value=BPM
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b003.state='normal'
+
+		if lfobutmode==3:
+			if encodervalue>0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if loopsize[trackselected-1]<16*16:
+						loopsize[trackselected-1]+=16
+						q2.put(loopsize)	
+						self.LoopSdisplay()				
+			elif encodervalue<0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if loopsize[trackselected-1]>16:
+						loopsize[trackselected-1]-=16
+						q2.put(loopsize)
+						self.LoopSdisplay()
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b004.state='normal'
+
+		if lfobutmode==4:
+			if encodervalue>0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.Phase(20)
+			elif encodervalue<0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.Phase(-20)
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b025.state='normal'
+				self.closemenus()
+		global playing
+		if v6.value==1:
+			v6.value=2
+			playing=1
+			self.b001.text="%s"%(icon('icon-pause', 22))
+			self.b001.state='down'
+		elif v6.value==0:
+			self.b001.text="%s"%(icon('icon-play', 22))
+			self.b001.state='normal'
+			playing=0
+			v6.value=2
+
+
+
 
 
 ##############################################################################################
@@ -3791,7 +4748,7 @@ class ADSRScreen(Screen):
 class Timing():
 
 
-	def Timer(self,v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6):
+	def Timer(self,v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12):
 		nextcall=time.time()
 		count=0
 		MIDIstoped=0
@@ -3810,7 +4767,7 @@ class Timing():
 					#print(('loopsize', loopsize))
 			while q3.empty() is False:
 					song=q3.get()
-					print(('song', song))
+					#print(('song', song))
 			while q4.empty() is False:
 					Sendinfo=q4.get()
 					#print(('sendinfo', Sendinfo))
@@ -3820,7 +4777,30 @@ class Timing():
 			while q6.empty() is False:
 					update3=q6.get()
 					sequencepool3[trackselected-1]=update3
-					#print('sequencepool3queue', sequencepool3[trackselected-1])
+					#print("track",trackselected-1,'sequencepool3queue', sequencepool3[trackselected-1])
+			while q7.empty() is False:
+					UpdateEnvPool3=q7.get()
+					EnvPool3[trackselected-1]=UpdateEnvPool3
+					#print('EnvPool3.track', EnvPool3[trackselected-1])
+			while q8.empty() is False:
+					UpdateADSRool3=q8.get()
+					ADSRPool3[trackselected-1]=UpdateADSRool3
+					#print('UpdateADSRool3.track', ADSRPool3[trackselected-1])
+			while q9.empty() is False:
+					ADSRtrig=q9.get()
+					#print('ADSRtrig', ADSRtrig)			
+			while q10.empty() is False:
+					sequencepool3=q10.get()
+					#print('sequencepool3queue', sequencepool3)
+			while q11.empty() is False:
+					EnvPool3=q11.get()
+					#print('EnvPool3', EnvPool3)
+			while q12.empty() is False:
+					ADSRPool3=q12.get()
+					#print('UpdateADSRool3', ADSRPool3)
+
+
+
 
 			if rpi==1 and Syncinfo[4]==0:
 				available_ports = midiout.get_ports()
@@ -3847,7 +4827,7 @@ class Timing():
 				if count > v3.value:
 					count=1
 				nextcall = nextcall+interval
-				self.send2(count,sequencepool3,loopsize,song,Sendinfo,port,Syncinfo)
+				self.send2(count,sequencepool3,loopsize,song,Sendinfo,port,Syncinfo,ADSRtrig,EnvPool3,ADSRPool3)
 				#print((nextcall-time.time()))
 				if nextcall-time.time()>0:
 					time.sleep(nextcall-time.time())
@@ -3860,6 +4840,7 @@ class Timing():
 					self.USBmessage("stop",Syncinfo,port)
 					self.jacksyncstop()
 					MIDIstoped=1
+					#self.stopCV()
 					for i in range(0,16):
 						self.noteoffUSB(i,Sendinfo,port)
 						self.noteoffMIDI(i,Sendinfo)
@@ -3870,6 +4851,9 @@ class Timing():
 					self.MIDImessage(252,Syncinfo)
 					self.USBmessage("stop",Syncinfo,port)
 					self.jacksyncstop()
+					#self.stopCV()
+					global ADSRcounter
+					ADSRcounter=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 					for i in range(0,16):
 						self.noteoffUSB(i,Sendinfo,port)
 						self.noteoffMIDI(i,Sendinfo)
@@ -3878,7 +4862,7 @@ class Timing():
 
 
 
-	def send2(self,count,sequencepool3,loopsize,song,Sendinfo,port,Syncinfo):
+	def send2(self,count,sequencepool3,loopsize,song,Sendinfo,port,Syncinfo,ADSRtrig,EnvPool3,ADSRPool3):
 		for n,track in enumerate(sequencepool3): #n is track number
 			pos=count%loopsize[n]-1
 			if pos==0:
@@ -3891,12 +4875,22 @@ class Timing():
 					if Sendinfo[n][6]==1: self.noteoffUSB(n,Sendinfo,port)
 					if Sendinfo[n][6]==2: self.noteoffMIDI(n,Sendinfo)
 			if n+1 in song[int(count/(16*4))]:
+				if EnvPool3[n][pos]!=[]:
+					#print(n,EnvPool3[n][pos])
+					if Sendinfo[n][9]>0:self.CVsendLFO(n,EnvPool3[n][pos],Sendinfo)
 				if len(track[pos])>0:
+					if ADSRtrig[n]!=0:
+						for elem in track[pos]:
+							if elem[1]==1:
+								self.CVlaunchADSR(ADSRtrig[n])
+								break
 					for elem in track[pos]:
 						if Sendinfo[n][6]==1: self.USBsend2(n,elem,Sendinfo,port)
 						if Sendinfo[n][6]==2: self.MIDIsend2(n,elem,Sendinfo)
 						if Sendinfo[n][1]>0: self.CVsendPitch2(n,elem,Sendinfo)
 						if Sendinfo[n][3]>0: self.CVsendGate2(n,elem,Sendinfo)
+				if ADSRcounter[n]>0:
+					if Sendinfo[n][12]>0:self.CVsendADSR(n,ADSRPool3,Sendinfo,loopsize)
 			#if count%64==0 and n+1 not in song[int(count/(16*4))] and n+1 in song[int(count/(16*4))-1]
 			#	print("All Notes Off song mode change")
 			#	if Sendinfo[n][6]==1: self.noteoffUSB(n,Sendinfo,port)
@@ -3926,6 +4920,8 @@ class Timing():
 			if elem[0]==0x60: dacregister[2].append([elem[0],elem[1],elem[2]])									
 		CVsends=CVdelayed
 		CVdelayed=[]
+		#print("dacregisteres",dacregister)
+		#print("Sendinfo",Sendinfo)
 		try:
 			for dac in dacregister:
 				if len(dac)==1:
@@ -3941,6 +4937,51 @@ class Timing():
 					if rpi==1:bus.write_i2c_block_data(dac[0][0], dac[0][1], [dac[0][2][0],dac[0][2][1],dac[1][1], dac[1][2][0],dac[1][2][1],dac[2][1], dac[2][2][0],dac[2][2][1],dac[3][1], dac[3][2][0],dac[3][2][1]])
 					#print(dac[0][0], dac[0][1], [dac[0][2][0],dac[0][2][1],dac[1][1], dac[1][2][0],dac[1][2][1],dac[2][1], dac[2][2][0],dac[2][2][1],dac[3][1], dac[3][2][0],dac[3][2][1]])
 		except: print("error dac registers")
+
+	def stopCV(self):
+		global CVsends
+		CVsends=[]
+		i=0
+		a,b=divmod(4096*(5.00)/15,256)
+		while i <12:
+			CVsends.append([CVinfo[i][0],CVinfo[i][1],[int(a), int(b)],CVinfo[i][2]])
+			i+=1
+		#print(CVsends)
+		self.sendCV()
+
+
+
+	def CVsendLFO(self,n,elem,Sendinfo):
+		if elem!=[]:
+			a,b=divmod(4096*(elem+5.00)/15,256)
+			#print(('CV LFO',Sendinfo[n][9],Sendinfo[n][10], 'Value',elem))
+			CVsends.append([Sendinfo[n][9],Sendinfo[n][10],[int(a), int(b)],Sendinfo[n][11]])
+			
+	def CVlaunchADSR(self,n):
+		global ADSRcounter
+		ADSRcounter[n-1]=1
+		#print("reseting counter ADSR")
+		#print(ADSRcounter)
+
+	def CVsendADSR(self,n,ADSRPool3,Sendinfo,loopsize):
+		global ADSRcounter
+		if ADSRcounter[n]<loopsize[n]+1:ADSRcounter[n]+=1
+		else:ADSRcounter[n]=0
+		#print(ADSRcounter)
+		#print(ADSRPool3[n][ADSRcounter[n]-2])
+		elem=ADSRPool3[n][ADSRcounter[n]-2]/2.0
+		#print(elem)
+		if elem!=[]:
+			a,b=divmod(4096*(elem+5.00)/15,256)		
+			CVsends.append([Sendinfo[n][12],Sendinfo[n][13],[int(a), int(b)],Sendinfo[n][14]])
+			#print(CVsends)
+
+
+	def resetADSRcounter(self,n):
+		global ADSRcounter
+		ADSRcounter[n]=0
+		#print(ADSRcounter)
+
 
 	def noteoffUSB(self,n,Sendinfo,port):
 		#print("note off USB")
@@ -4491,11 +5532,53 @@ sequencepool_0=[[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],
 
 sequencepool3=sequencepool_0
 
+
+EnvPool2=[[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]],[[400.001,379.001]]]
+
+EnvPool3=[[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]]
+
+ADSRPool2=[[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0],[92.0,370.0,142.0,195.0,292.0,195.0,492.0,20.0]]
+
+ADSRPool3=[[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
+[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]]
+
+
+
+EnvPool0=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
 #print(sequencepool3)
 
 #print(sequencepool3[1])
-# [Midi channel, Pitch Dac N, Pitch Ch N, Gate Dac N, Gate Ch N, Pitch offeset,CV Num Pitch, Cv Num Gate]
-Sendinfo=numpy.full((100,9),0)
+# [Midi channel, Pitch Dac N, Pitch Ch N, Gate Dac N, Gate Ch N, Pitch offeset,DIN or USB,CV Num Pitch, Cv Num Gate]
+Sendinfo=numpy.full((100,15),0)
 Sendinfo=Sendinfo.tolist()
 #print(Sendinfo)
 
@@ -4536,6 +5619,11 @@ DACpool=[0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0
 CVsends=[]
 CVdelayed=[]
 stoplong=0
+trackmode=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+Phase=[55,55,55,55,55,55,55,55,55,55,55,55,55,55,55,55]
+ADSRtrig=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]  #track i triggers ADSR from track x
+ADSRcounter=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+displayinfo=0
 
 # size of the loops of each tracks
 loopsize=numpy.full(100,64)
@@ -4560,6 +5648,7 @@ print("CFM1 Version: " + str(version))
 paramcalc=ParamScreen()
 Sendinfo=paramcalc.convert()
 
+
 #[din sync,usb sync,clock ppq,usb ppq,usb in (1) or out (0)]
 Syncinfo=[0,0,0,0,0]
 Syncinfo=paramcalc.convertsync()
@@ -4567,9 +5656,9 @@ Syncinfo=paramcalc.convertsync()
 midiout = rtmidi.MidiOut()
 #midiout = 0
 
-def outsmp(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6):
+def outsmp(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12):
 	ti=Timing()
-	ti.Timer(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6)
+	ti.Timer(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12)
 
 #v1: playing ; v2: count ; v3: song size ; v4: BPM
 #q1:sequencepool ; q2: loopsize ; q3: song ; q4: Sendinfo
@@ -4598,6 +5687,17 @@ q5=multiprocessing.Queue()
 q5.put(Syncinfo)
 q6=multiprocessing.Queue()
 #q6.put(sequencepool3)
+q7=multiprocessing.Queue()
+q8=multiprocessing.Queue()
+q9=multiprocessing.Queue()
+q9.put(ADSRtrig)
+q10=multiprocessing.Queue()
+q10.put(sequencepool3)
+q11=multiprocessing.Queue()
+q11.put(EnvPool3)
+q12=multiprocessing.Queue()
+q12.put(ADSRPool3)
+#q5.put(Syncinfo)
 
 
 def insmp(w1,w2):
@@ -4636,7 +5736,7 @@ s3=multiprocessing.Queue()
 s3.put(Syncinfo)
 s4=multiprocessing.Queue()
 
-p=multiprocessing.Process(target=outsmp,args=(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6))
+p=multiprocessing.Process(target=outsmp,args=(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12))
 p.start()
 pq=multiprocessing.Process(target=insmp,args=(w1,w2))
 pq.start()
