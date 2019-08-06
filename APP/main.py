@@ -1,7 +1,7 @@
 import os
 os.environ['KIVY_GL_BACKEND']='gl'
 
-# CFM1 APP version 1.0
+# CFM1 APP version 1.2
 
 import kivy
 import platform
@@ -16,6 +16,7 @@ from kivy.config import Config
 from kivy.uix.button import Button
 from kivy.clock import Clock
 from kivy.uix.tabbedpanel import TabbedPanel
+from kivy.animation import  Animation
 from decimal import *
 import operator
 import json
@@ -26,6 +27,8 @@ import rtmidi
 import numpy
 from iconfonts import *
 from os.path import join, dirname
+from math import *
+import random
 
 
 register('default_font', 'Icons.ttf',
@@ -69,6 +72,9 @@ if rpi==1:
 	GPIO.output(ldac2, 0)  
 	GPIO.output(ldac3, 0)  
 
+if rpi==0:
+	pass
+
 
 
 ##############################################################################################
@@ -106,7 +112,11 @@ class ParamScreen(Screen):
 		self.versionupdate()
 		self.b1000005.pos=320,1170
 		Clock.schedule_interval(self.listening, 0.002)
-		w1.value=0		
+		w1.value=0	
+
+	def projectmode(self):
+		if projectmode==0:self.manager.current = 'song_mode'
+		else:self.manager.current = 'MixerScreen'		
 
 	def versionupdate(self):
 		self.b1000004.text='CFM1 Version '+str(version)
@@ -262,16 +272,18 @@ class ParamScreen(Screen):
 		self.b3005.pos=0,0		
 		if str(paramcf1["CV-map"][CVselectedparam-1]["Track"])!= "NONE":
 	
-			print('trackmode',trackmode)
-			print(paramcf1["CV-map"][CVselectedparam-1]["Track"])
-			if trackmode[int(paramcf1["CV-map"][CVselectedparam-1]["Track"])-1]==1:
-				self.b4001.text="GATE"
-				self.b4002.text="PITCH"
+			#print('trackmode',trackmode)
+			#print(paramcf1["CV-map"][CVselectedparam-1]["Track"])
+			if trackmode[int(paramcf1["CV-map"][CVselectedparam-1]["Track"])-1]==1 or trackmode[int(paramcf1["CV-map"][CVselectedparam-1]["Track"])-1]==4:
+				self.b4001.text="PITCH"
+				self.b4002.text="GATE"
 				self.b4001.pos=329,121
 			elif trackmode[int(paramcf1["CV-map"][CVselectedparam-1]["Track"])-1]==2:
 				self.b4002.text="LFO"
-			else:
+			elif trackmode[int(paramcf1["CV-map"][CVselectedparam-1]["Track"])-1]==3:
 				self.b4002.text="ADSR"
+			elif trackmode[int(paramcf1["CV-map"][CVselectedparam-1]["Track"])-1]==5:
+				self.b4002.text="GATE"				
 
 		else:
 			self.b4001.text="GATE"
@@ -378,7 +390,7 @@ class ParamScreen(Screen):
 		for key, val in list(self.ids.items()):
 			if val==button: ID=key
 		trackselectedparam=int(ID[-3:])+rangeMidi
-		print(trackselectedparam)
+		#print(trackselectedparam)
 
 
 	def CVselected(self,button):
@@ -412,7 +424,7 @@ class ParamScreen(Screen):
 			self.CVupdate()
 			self.convert()
 		if self.b4003.text=="CV TYPE:":
-			if self.b4002.text=="PITCH" and int(new)==1:
+			if self.b4001.text=="PITCH" and int(new)==2:
 				paramcf1["CV-map"][CVselectedparam-1]["Type"] = "PITCH"
 				paramcf1["CV-map"][CVselectedparam-1]["Voltage"] = "[ -5V ; 5V ]"
 				i=0
@@ -439,7 +451,7 @@ class ParamScreen(Screen):
 						paramcf1["CV-map"][i]["Track"] = "NONE"
 						break
 					i+=1									
-			if self.b4001.text=="GATE" and int(new)==2:
+			if self.b4002.text=="GATE" and int(new)==1:
 				paramcf1["CV-map"][CVselectedparam-1]["Type"] = "GATE"
 				paramcf1["CV-map"][CVselectedparam-1]["Voltage"] = "[ -5V ; 5V ]"
 				i=0
@@ -454,7 +466,7 @@ class ParamScreen(Screen):
 				with open("param.json", "w") as jsonFile: json.dump(paramcf1, jsonFile)				
 			self.CVupdate()
 			self.convert()
-			print(Sendinfo)
+			#print(Sendinfo)
 
 
 	def port2(self,button):
@@ -498,7 +510,7 @@ class ParamScreen(Screen):
 				with open("param.json", "w") as jsonFile: json.dump(paramcf1, jsonFile)				
 			self.syncupdate()
 			self.convertsync()
-		print(Sendinfo)
+		#print(Sendinfo)
 
 	def convert(self):
 		i=0
@@ -560,7 +572,7 @@ class ParamScreen(Screen):
 		else: Syncinfo[3]=2
 		if paramcf1['sync'][4]["USBstate"]=="in": Syncinfo[4]=1
 		else: Syncinfo[4]=0			
-		print(Syncinfo)
+		#print(Syncinfo)
 		if start==1:
 			q5.put(Syncinfo)
 			r3.put(Syncinfo)
@@ -626,6 +638,18 @@ class ParamScreen(Screen):
 			self.b100006.text='Off'
 			x1.value=0
 		print(x1.value)
+
+	def SyncIn(self):
+		if self.b100007.text=='Off':
+			self.b100007.text='USB'
+			y1.value=1
+
+		elif self.b100007.text=='USB':
+			self.b100007.text='DIN'
+			y1.value=2
+		else:
+			self.b100007.text='Off'
+			y1.value=0
 
 	def BPMmult(self):
 		if rpi==1:
@@ -971,6 +995,9 @@ class SongScreen(Screen):
 
 
 	def on_enter(self):
+		global seqbuttonmodesong
+		seqbuttonmodesong=0
+		self.mode(4)
 		self.b003.text=str(BPM)
 		self.loadseq()
 		#print(song)
@@ -987,6 +1014,10 @@ class SongScreen(Screen):
 			self.b001.text="%s"%(icon('icon-play', 22))
 			self.movebarenter()
 		self.infos()
+		if y1.value!=0:self.b0003.pos=185,419
+		else:self.b0003.pos=1185,419
+		global projectmode
+		projectmode=0
 
 
 	def infos(self):
@@ -1009,6 +1040,12 @@ class SongScreen(Screen):
 						else:
 							elem.text="ADSR, NO TRIGGER"
 							elem.pos[0]=79
+				elif trackmode[n+rangeYs]==4: 
+					elem.text="RANDOM"
+					elem.pos[0]=38
+				elif trackmode[n+rangeYs]==5: 
+					elem.text="EUCLIDEAN"
+					elem.pos[0]=48				
 		else:
 			for n,elem in enumerate(listinfo):
 				elem.pos[0]=1000
@@ -1040,7 +1077,9 @@ class SongScreen(Screen):
 			self.b021.pos=1301,1182
 			self.b022.pos=1301,1243
 			self.b0222.pos=1301,1243
-			self.b0223.pos=1301,1243			
+			self.b0223.pos=1301,1243
+			self.b0224.pos=1301,1243
+			self.b0225.pos=1301,1243			
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -1059,8 +1098,8 @@ class SongScreen(Screen):
 
 	def seqmode(self):
 		if self.b006.state=="down":
-			self.b011.pos= 496,360
-			self.b012.pos= 496,301
+			self.b011.pos= 496,301
+			self.b012.pos= 496,360
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b013.pos= 344,900
@@ -1071,7 +1110,9 @@ class SongScreen(Screen):
 			self.b021.pos=1301,1182
 			self.b022.pos=1301,1243
 			self.b0222.pos=1301,1243
-			self.b0223.pos=1301,1243			
+			self.b0223.pos=1301,1243
+			self.b0224.pos=1301,1243
+			self.b0225.pos=1301,1243			
 			self.b007.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -1102,7 +1143,9 @@ class SongScreen(Screen):
 			self.b021.pos=1301,1182
 			self.b022.pos=1301,1243
 			self.b0222.pos=1301,1243
-			self.b0223.pos=1301,1243						
+			self.b0223.pos=1301,1243	
+			self.b0224.pos=1301,1243
+			self.b0225.pos=1301,1243					
 			self.b007.state="normal"
 			self.b006.state="normal"
 			self.b010.pos= 0,0
@@ -1135,7 +1178,9 @@ class SongScreen(Screen):
 		self.b021.pos=1301,1182
 		self.b022.pos=1301,1243
 		self.b0222.pos=1301,1243
-		self.b0223.pos=1301,1243				
+		self.b0223.pos=1301,1243	
+		self.b0224.pos=1301,1243
+		self.b0225.pos=1301,1243			
 		self.b010.pos= 1000,0
 		self.b800.state="normal"
 		self.b700.state="normal"
@@ -1340,6 +1385,10 @@ class SongScreen(Screen):
 			self.b0222.pos=301,243
 		elif trackmode[trackselected-1]==3:
 			self.b0223.pos=301,243
+		elif trackmode[trackselected-1]==4:
+			self.b0224.pos=301,243
+		elif trackmode[trackselected-1]==5:
+			self.b0225.pos=301,243
 
 	def cleartrack(self):
 		global song
@@ -1395,8 +1444,7 @@ class SongScreen(Screen):
 			seqbuttonmodesong=0
 			self.b003.state='normal'
 			self.b004.state='normal'
-			print("here")
-		print(seqbuttonmodesong)
+		print("button mode",seqbuttonmodesong)
 
 	def listening(self,*args):
 		global wheel
@@ -1505,13 +1553,22 @@ class SeqScreen(Screen):
 		global rangeX
 		global zoom
 		global trackmode
+		global seqbuttonmode
+		seqbuttonmode=0
+		if trackmode[trackselected-1]!=1:clearsequence()
 		trackmode[trackselected-1]=1
 		print('trackmode',trackmode[trackselected-1])
+		print('trackselected',trackselected)
 		w1.value=0
 		Clock.schedule_interval(self.listening, 0.002)
-		self.deleteADSR()
-		self.deleteLFO()
+		#self.deleteADSR()
+		#self.deleteLFO()
+		deleteLFO()
+		deleteADSR()
+
+		
 		if start > 0:
+			self.mode(4)
 			rangeY=36
 			rangeX=0
 			zoom=4
@@ -1598,6 +1655,9 @@ class SeqScreen(Screen):
 				self.b001.state="normal"
 				self.b001.text="%s"%(icon('icon-play', 22))
 				self.movebarenter()
+			self.b006.text=str(trackselected)+ ": SEQUENCE"
+			if y1.value!=0:self.b0003.pos=185,419
+			else:self.b0003.pos=1185,419
 		else: start = start +1
 
 	def leaving(self):
@@ -1978,6 +2038,7 @@ class SeqScreen(Screen):
 			self.b012.pos= 496,900
 			self.b023.pos= 496,900
 			self.b024.pos= 496,900
+			self.b025.pos= 496,900
 			self.b013.pos= 344,900
 			self.b014.pos= 344,900
 			self.b016.pos= 344,900
@@ -1986,6 +2047,7 @@ class SeqScreen(Screen):
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
+			self.projectmdoedisplay()
 		else:
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
@@ -1998,6 +2060,7 @@ class SeqScreen(Screen):
 			self.b012.pos= 496,301
 			self.b023.pos= 496,242
 			self.b024.pos= 496,183
+			self.b025.pos= 496,124
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b013.pos= 344,900
@@ -2013,6 +2076,7 @@ class SeqScreen(Screen):
 			self.b012.pos= 496,900
 			self.b023.pos= 496,900
 			self.b024.pos= 496,900
+			self.b025.pos= 496,900
 			self.b010.pos= 1000,0
 
 	def tools(self):
@@ -2023,7 +2087,8 @@ class SeqScreen(Screen):
 			self.b020.pos= 344,183
 			self.b022.pos= 344,124
 			self.b023.pos= 496,900
-			self.b024.pos= 496,900			
+			self.b024.pos= 496,900	
+			self.b025.pos= 496,900					
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
 			self.b008.pos= 648,900
@@ -2350,26 +2415,17 @@ class SeqScreen(Screen):
 	def LoopSdisplay(self):
 		a,b=divmod(loopsize[trackselected-1],16)
 		b=b/4
-		self.b004.text=str(a) + "." +str(b)
+		#self.b004.text=str(a) + "." +str(b)
+		self.b004.text=str(a)
 		self.loopbar()
 
-	def deleteLFO(self):
-		global EnvPool2
-		global EnvPool3
-		EnvPool2[trackselected-1]=[0]
-		EnvPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
-		#print("deleted",EnvPool3[trackselected-1])
-		#print("EnvPool0",EnvPool0)
-		q7.put(EnvPool3[trackselected-1])
+	def projectmode(self):
+		if projectmode==0:self.manager.current = 'song_mode'
+		else:self.manager.current = 'MixerScreen'
 
-	def deleteADSR(self):
-		global ADSRPool2
-		global ADSRPool3
-		ADSRPool2[trackselected-1]=[0]
-		ADSRPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
-		q8.put(ADSRPool3[trackselected-1])
-
-
+	def projectmdoedisplay(self):
+		if projectmode==0:self.b008.text= 'SONG'
+		else:self.b008.text= 'LIVE'
 
 ##############################################################################################
 ##############################################################################################
@@ -2733,6 +2789,17 @@ class SaveSong(Screen):
 					savedsong["savedsong"][chosen+rangeFile*4-1]["MODE"] = trackmode
 					savedsong["savedsong"][chosen+rangeFile*4-1]["PHASE"] = Phase																								
 					json.dump(savedsong, s2)
+				with open('/home/pi/Desktop2/UIP/savedsong2.json', "w") as s3:
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["soopsize"] = loopsize
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["loopsizeS"] = loopsizeS
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["pulseeucli"] = pulseeucli
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["stepeucli"] = stepeucli
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["EucliOffset"] = EucliOffset	
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomDensity"] = RandomDensity
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomTemp"] = RandomTemp
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomRatchet"] = RandomRatchet
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["EucliPool2"] = EucliPool2																									
+					json.dump(savedsong2, s3)					
 			else:
 				with open('savedsong.json', "w") as s2:
 					savedsong["savedsong"][chosen+rangeFile*4-1]["song"] = song
@@ -2743,6 +2810,17 @@ class SaveSong(Screen):
 					savedsong["savedsong"][chosen+rangeFile*4-1]["MODE"] = trackmode
 					savedsong["savedsong"][chosen+rangeFile*4-1]["PHASE"] = Phase																	
 					json.dump(savedsong, s2)
+				with open('savedsong2.json', "w") as s3:
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["loopsize"] = loopsize
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["loopsizeS"] = loopsizeS
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["pulseeucli"] = pulseeucli
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["stepeucli"] = stepeucli
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["EucliOffset"] = EucliOffset	
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomDensity"] = RandomDensity
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomTemp"] = RandomTemp
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomRatchet"] = RandomRatchet	
+					savedsong2["savedsong2"][chosen+rangeFile*4-1]["EucliPool2"] = EucliPool2																								
+					json.dump(savedsong2, s3)	
 		"""
 		else:
 			from midi import MIDIFile
@@ -2902,6 +2980,15 @@ class LoadSong(Screen):
 		global ADSRtrig		
 		global sequencepool2
 		global Phase
+		global loopsizeS
+		global loopsize
+		global pulseeucli
+		global stepeucli
+		global EucliOffset
+		global RandomRatchet
+		global RandomDensity
+		global RandomTemp
+		global EucliPool2
 
 		print(chosen)
 		if self.b001.state=="down":
@@ -2916,6 +3003,18 @@ class LoadSong(Screen):
 					trackmode=savedsong["savedsong"][chosen+rangeFile*4-1]["MODE"]
 					ADSRtrig=savedsong["savedsong"][chosen+rangeFile*4-1]["TRIG"]	
 					Phase=savedsong["savedsong"][chosen+rangeFile*4-1]["PHASE"]									
+				with open('/home/pi/Desktop2/UIP/savedsong2.json') as s3:
+					savedsong2 = json.load(s3)
+					#print((savedsong["savedsong"][chosen+rangeFile*4-1]["song"]))
+					loopsize=savedsong2["savedsong2"][chosen+rangeFile*4-1]["loopsize"]
+					loopsizeS=savedsong2["savedsong2"][chosen+rangeFile*4-1]["loopsizeS"]					
+					pulseeucli=savedsong2["savedsong2"][chosen+rangeFile*4-1]["pulseeucli"]
+					stepeucli=savedsong2["savedsong2"][chosen+rangeFile*4-1]["stepeucli"]
+					EucliOffset=savedsong2["savedsong2"][chosen+rangeFile*4-1]["EucliOffset"]
+					RandomDensity=savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomDensity"]	
+					RandomTemp=savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomTemp"]	
+					RandomRatchet=savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomRatchet"]
+					EucliPool2=savedsong2["savedsong2"][chosen+rangeFile*4-1]["EucliPool2"]			
 
 			else:
 				with open('savedsong.json') as s2:
@@ -2929,7 +3028,21 @@ class LoadSong(Screen):
 					ADSRtrig=savedsong["savedsong"][chosen+rangeFile*4-1]["TRIG"]
 					Phase=savedsong["savedsong"][chosen+rangeFile*4-1]["PHASE"]							
 					#print(sequencepool2)
+				with open('savedsong2.json') as s3:
+					savedsong2 = json.load(s3)
+					#print((savedsong["savedsong"][chosen+rangeFile*4-1]["song"]))
+					loopsize=savedsong2["savedsong2"][chosen+rangeFile*4-1]["loopsize"]
+					loopsizeS=savedsong2["savedsong2"][chosen+rangeFile*4-1]["loopsizeS"]					
+					pulseeucli=savedsong2["savedsong2"][chosen+rangeFile*4-1]["pulseeucli"]
+					stepeucli=savedsong2["savedsong2"][chosen+rangeFile*4-1]["stepeucli"]
+					EucliOffset=savedsong2["savedsong2"][chosen+rangeFile*4-1]["EucliOffset"]
+					RandomDensity=savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomDensity"]	
+					RandomTemp=savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomTemp"]	
+					RandomRatchet=savedsong2["savedsong2"][chosen+rangeFile*4-1]["RandomRatchet"]
+					EucliPool2=savedsong2["savedsong2"][chosen+rangeFile*4-1]["EucliPool2"]
 			q3.put(song)
+			q2.put(loopsize)
+			v3.value=loopsizeS
 			q9.put(ADSRtrig)
 
 
@@ -2954,10 +3067,13 @@ class LoadSong(Screen):
 					sequencepool2[trackselected-1]=[]
 			else: sequencepool2[trackselected-1]=[]
 		"""
+		self.clearseq()
 		self.convertsequence()
 		self.convertlfo()
 		self.convertadsr()
 		self.leaving()
+		self.converteucli()
+		q10.put(sequencepool3)	
 
 
 	def usbcheck(self):
@@ -2974,19 +3090,39 @@ class LoadSong(Screen):
 		else:
 			self.b002.text="IMPORT"
 
-	def convertsequence(self):
+	def clearseq(self):
 		global sequencepool3
 		i=0
 		while i<16:
 			for a,elem in enumerate(sequencepool3[i]): sequencepool3[i][a]=[]
+			i+=1		
+
+	def convertsequence(self):
+		global sequencepool3
+		i=0
+		while i<16:
+			#for a,elem in enumerate(sequencepool3[i]): sequencepool3[i][a]=[]
 			for elem in sequencepool2[i]:sequencepool3[i][elem[0]-1].append([elem[1],elem[2],elem[3]])
 			#for elem in sequencepool2[i]:print(elem)
 			#print("UPDATED: channel:", i,sequencepool3[i])
 			i+=1
 		#print("sequencepool3",sequencepool3)
-		q10.put(sequencepool3)			
+		#q10.put(sequencepool3)			
 
 
+	def converteucli(self):
+		global sequencepool3
+		j=0
+		while j<16:
+
+			for i in range(64):
+				if EucliPool2[j][i%stepeucli[j]]==1:
+					sequencepool3[j][i*4].append([36,1,4])
+					sequencepool3[j][i*4+4].append([36,0,4])
+					sequencepool3[j][i*4]=sorted(sequencepool3[j][i*4],key=operator.itemgetter(1,0))
+					sequencepool3[j][i*4+4]=sorted(sequencepool3[j][i*4+4],key=operator.itemgetter(1,0))
+			j+=1
+		#q10.put(sequencepool3)
 
 
 	def convertlfo(self):
@@ -3052,7 +3188,7 @@ class LoadSong(Screen):
 						if r>0: ADSRPool3[i][j]=r
 						else:ADSRPool3[i][j]=0
 						x=j
-					elif i>p5[0]:ADSRPool3[i][j]=0
+					elif j>p5[0]:ADSRPool3[i][j]=0
 					j+=1
 			i+=1
 		#print("adsr",ADSRPool3)
@@ -3172,6 +3308,419 @@ class LFOScreen(Screen):
 		if trackmode[trackselected-1]!=2:
 			loopsize[trackselected-1]=64
 			self.reset()
+			q2.put(loopsize)
+		trackmode[trackselected-1]=2
+		print('trackmode',trackmode[trackselected-1])
+		global lfobutmode
+		lfobutmode=0
+		self.mode(0)
+		print(trackselected-1)
+		self.LoopSdisplay()
+		self.b025.pos[0]=Phase[trackselected-1]
+		clearsequence()
+		deleteADSR()
+		self.move_button(Lline7.pos[1])
+		self.b006.text=str(trackselected)+ ": LFO"
+		if y1.value!=0:self.b0003.pos=185,419
+		else:self.b0003.pos=1185,419
+
+	def projectmode(self):
+		if projectmode==0:self.manager.current = 'song_mode'
+		else:self.manager.current = 'MixerScreen'
+
+	def projectmdoedisplay(self):
+		if projectmode==0:self.b008.text= 'SONG'
+		else:self.b008.text= 'LIVE'
+
+	def leaving(self):
+		Clock.unschedule(self.listening)
+		print("unschedule seq")
+
+
+	def menu(self):
+		if self.b007.state=="down":
+			self.b008.pos= 648,360
+			self.b009.pos= 648,301
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b013.pos= 344,900		
+			self.b006.state="normal"
+			self.b005.state="normal"
+			self.b010.pos= 0,0
+			self.b026.pos= 344,900	
+			self.b027.pos= 496,900
+			self.projectmdoedisplay()
+		else:
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b010.pos= 1000,0
+
+
+	def seqmode(self):
+		if self.b006.state=="down":
+			self.b011.pos= 496,360
+			self.b012.pos= 496,301
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b013.pos= 344,900
+			self.b014.pos= 496,242	
+			self.b015.pos= 496,183			
+			self.b007.state="normal"
+			self.b005.state="normal"
+			self.b010.pos= 0,0
+			self.b026.pos= 344,900	
+			self.b027.pos= 496,124
+		else:
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b010.pos= 1000,0
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b027.pos= 496,900
+
+	def tools(self):
+		if self.b005.state=="down":
+			self.b013.pos= 344,360		
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b007.state="normal"
+			self.b006.state="normal"
+			self.b010.pos= 0,0
+			self.b026.pos= 344,301
+			self.b027.pos= 496,900
+		else:
+			self.b013.pos= 344,900			
+			self.b010.pos= 1000,0	
+			self.b026.pos= 344,900	
+
+
+	def mode(self,num):
+		global lfobutmode
+		if num==0:
+			self.b003.state='normal'
+			self.b004.state='normal'
+			self.b025.state='normal'
+		if num==2:
+			if lfobutmode==2:
+				lfobutmode=0
+				self.b003.state='normal'
+			else:
+				lfobutmode=2
+				self.b003.state='down'
+				w2.value=0
+		if num==3:
+			if lfobutmode==3:
+				lfobutmode=0
+				self.b004.state='normal'
+			else:
+				lfobutmode=3
+				self.b004.state='down'
+				w2.value=0
+		if num==4:
+			if lfobutmode==4:
+				lfobutmode=0
+				self.b025.state='normal'
+			else:
+				lfobutmode=4
+				self.b025.state='down'
+				w2.value=0
+		print(("buton mode",lfobutmode))
+
+
+
+	def closemenus(self):
+		if self.b007.state=="down":
+			self.b007.state="normal"
+			self.menu()
+		if self.b006.state=="down":
+			self.b006.state="normal"
+			self.seqmode()
+		if self.b005.state=="down":
+			self.b005.state="normal"
+			self.tools()
+
+	def start(self):
+		global playing
+		if self.b001.state=="down":
+			v1.value=1
+			playing=1
+			self.b001.text="%s"%(icon('icon-pause', 22))
+		else:
+			self.b001.text="%s"%(icon('icon-play', 22))
+			playing=0
+			v1.value=2
+
+
+
+	def stop(self):
+		global playing
+		self.b001.state="normal"
+		self.b001.text="%s"%(icon('icon-play', 22))
+		v1.value=0
+		playing=0
+
+	def reset(self):
+		global EnvPool2
+		global Phase
+		EnvPool2[trackselected-1]=[[400,380]]
+		Phase[trackselected-1]=55
+		self.UIrefresh(EnvPool2[trackselected-1])
+		self.updateEnv()
+		self.convert2to3()
+		self.move_button(Lline7.pos[1])	
+		self.b025.pos[0]=55
+
+
+	def listening(self,*args):
+		global wheel
+		global lfobutmode
+		global loopsize
+		global BPM
+		encodervalue=w1.value
+		encoderpushed=w2.value
+		w1.value=0
+		step=v2.value
+		if lfobutmode==0: pass
+		if lfobutmode==2:
+			if encodervalue>0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if BPM<200:
+						BPM+=1
+						self.b003.text=str(BPM)
+						v4.value=BPM
+			elif encodervalue<0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if BPM>30:
+						BPM-=1
+						self.b003.text=str(BPM)
+						v4.value=BPM
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b003.state='normal'
+		if lfobutmode==3:
+			if encodervalue>0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if loopsize[trackselected-1]<16*16:
+						loopsize[trackselected-1]+=16
+						q2.put(loopsize)	
+						self.LoopSdisplay()				
+			elif encodervalue<0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if loopsize[trackselected-1]>16:
+						loopsize[trackselected-1]-=16
+						q2.put(loopsize)
+						self.LoopSdisplay()
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b004.state='normal'
+		if lfobutmode==4:
+			if encodervalue>0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.Phase(20)
+			elif encodervalue<0:
+				self.closemenus()
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					self.Phase(-20)
+			if encoderpushed==1:
+				lfobutmode=0
+				self.b025.state='normal'
+				self.closemenus()
+		global playing
+		if v6.value==1:
+			v6.value=2
+			playing=1
+			self.b001.text="%s"%(icon('icon-pause', 22))
+			self.b001.state='down'
+		elif v6.value==0:
+			self.b001.text="%s"%(icon('icon-play', 22))
+			self.b001.state='normal'
+			playing=0
+			v6.value=2
+
+	def on_touch_move(self, touch):
+			global EnvPool2
+			global buttonpos 
+			buttonpos=touch.pos[1]-10
+			if 50 <= touch.pos[0] <= 750:
+				if 20 <= touch.pos[1] <= 380:
+					self.UIrefresh([touch.pos])
+					self.move_button(Lline7.pos[1])
+					self.updateEnv()
+
+	def encadrement_lfo(self, x, y, buttonpos):
+		txt = (buttonpos-x)*(100.0/(y-x))
+		return txt
+
+
+	def move_button(self, buttonpos):
+		txt=self.encadrement_lfo(190, 370, buttonpos)
+		if buttonpos >= 190:
+			self.b024.pos=(1,buttonpos)
+			self.b024.text=str(int(txt))
+		elif buttonpos < 190:			
+			self.b024.pos=(1,380 - buttonpos)
+			self.b024.text=str(int(-1 * txt))
+
+	def UIrefresh(self,Coord):
+		Lline7.pos=(Coord[0][0]-10,Coord[0][1]-10)	
+		Lline1.points=[(50,400 - Coord[0][1]),(Coord[0][0],Coord[0][1])]
+		Lline4.points=[(750,400 - Coord[0][1]),(Coord[0][0],Coord[0][1])]
+
+
+	def updateEnv(self):
+		global EnvPool2
+		EnvPool2[trackselected-1]=[]
+		EnvPool2[trackselected-1].append([Lline7.pos[0],Lline7.pos[1]])
+		#print(EnvPool2)
+		self.convert2to3()
+
+
+	def convert2to3(self):
+		global EnvPool2
+		global EnvPool3
+		#print(EnvPool2)
+		X=(((EnvPool2[trackselected-1][0][0]-40)/700)+0.001)*loopsize[trackselected-1]
+		Y=((EnvPool2[trackselected-1][0][1]-195.2)/37)
+		a1=2*Y/X
+		b1=-Y
+		a2=2*Y/(X-loopsize[trackselected-1]+1)
+		b2=Y-a2*X
+		#print(X,Y)
+		#print(a1,b1,a2,b2)
+		PHASE=(Phase[trackselected-1]+0.001-40)/700*loopsize[trackselected-1]-1.37
+		#print(PHASE)
+		i=0
+		
+		while i<loopsize[trackselected-1]:
+			n=(i+PHASE)%loopsize[trackselected-1]
+			if n<X:
+				EnvPool3[trackselected-1][i]=(a1*n+b1)*3/5
+			else:
+				EnvPool3[trackselected-1][i]=(a2*n+b2)*3/5
+			i+=1
+		q7.put(EnvPool3[trackselected-1])
+		#print(EnvPool3[trackselected-1])
+		#print(EnvPool3[trackselected-1][0],EnvPool3[trackselected-1][63])		
+
+
+	def LoopSdisplay(self):
+		self.l1.text=str(loopsize[trackselected-1]/16)
+		self.convert2to3()
+		self.b004.text=str(loopsize[trackselected-1]/16)
+
+	def Phase(self,move):
+		global Phase
+		if move <0 and self.b025.pos[0]>70 or move >0 and self.b025.pos[0]<730:
+			self.b025.pos[0]+=move
+			Phase[trackselected-1]=self.b025.pos[0]
+			#print(Phase[trackselected-1])
+			self.convert2to3()
+
+
+	def test1(self):
+		self.Phase(20)
+
+	def test2(self):
+		self.Phase(-20)
+
+	def polarity(self):
+		global polaritylfo
+		if polaritylfo[trackselected-1]==0:
+			polaritylfo[trackselected-1]=1
+			self.b026.text="UNIPOLAR"
+			self.UIrefresh(EnvPool2[trackselected-1])
+		else:
+			polaritylfo[trackselected-1]=0
+			self.b026.text="BIPOLAR"
+			self.UIrefresh(EnvPool2[trackselected-1])
+
+
+
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+
+
+
+class DRAWScreen(Screen):
+
+	def on_enter(self):
+		w1.value=0
+		Clock.schedule_interval(self.listening, 0.002)
+		self.b003.text=str(BPM)
+		if playing==1:
+			self.b001.state="down"
+			self.b001.text="%s"%(icon('icon-pause', 22))
+		else:
+			self.b001.state="normal"
+			self.b001.text="%s"%(icon('icon-play', 22))
+		global Lline7
+		global Point1
+		global Point2
+		global Point3
+		global Point4
+		global Point5
+		global Point6
+		global Point7
+		global Point8	
+		global Lline1
+		global Lline2
+		global Lline3
+		global Lline4
+		global Lline5
+		global Lline6
+		global Lline8										
+		Lline7 = self.ids.w_canvas.canvas.get_group('g')[0]
+		Point1 = self.ids.w_canvas.canvas.get_group('h')[0]
+		Point2 = self.ids.w_canvas.canvas.get_group('i')[0]
+		Point3 = self.ids.w_canvas.canvas.get_group('j')[0]
+		Point4 = self.ids.w_canvas.canvas.get_group('k')[0]
+		Point5 = self.ids.w_canvas.canvas.get_group('l')[0]
+		Point6 = self.ids.w_canvas.canvas.get_group('m')[0]
+		Point7 = self.ids.w_canvas.canvas.get_group('n')[0]
+		Point8 = self.ids.w_canvas.canvas.get_group('o')[0]
+		Lline1 = self.ids.w_canvas.canvas.get_group('a')[0]	
+		Lline2 = self.ids.w_canvas.canvas.get_group('q')[0]	
+		Lline3 = self.ids.w_canvas.canvas.get_group('r')[0]	
+		Lline4 = self.ids.w_canvas.canvas.get_group('b')[0]	
+		Lline5 = self.ids.w_canvas.canvas.get_group('t')[0]	
+		Lline6 = self.ids.w_canvas.canvas.get_group('u')[0]	
+		Lline8 = self.ids.w_canvas.canvas.get_group('w')[0]	
+		global trackmode
+		global loopsize
+		if trackmode[trackselected-1]!=2:
+			loopsize[trackselected-1]=64
+			self.reset()
 		trackmode[trackselected-1]=2
 		print('trackmode',trackmode[trackselected-1])
 		global lfobutmode
@@ -3182,6 +3731,15 @@ class LFOScreen(Screen):
 		self.clearsequence()
 		self.deleteADSR()
 		self.move_button(Lline7.pos[1])
+		global DrawPoints
+
+	def projectmode(self):
+		if projectmode==0:self.manager.current = 'song_mode'
+		else:self.manager.current = 'MixerScreen'
+
+	def projectmdoedisplay(self):
+		if projectmode==0:self.b008.text= 'SONG'
+		else:self.b008.text= 'LIVE'
 
 	def clearsequence(self):
 		global sequencepool2
@@ -3210,6 +3768,11 @@ class LFOScreen(Screen):
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
+			self.b026.pos= 344,900	
+			self.b027.pos= 496,900
+			self.b028.pos= 344,900
+			self.b029.pos= 344,900
+			self.projectmdoedisplay()
 		else:
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
@@ -3219,21 +3782,26 @@ class LFOScreen(Screen):
 	def seqmode(self):
 		if self.b006.state=="down":
 			self.b011.pos= 496,360
-			self.b012.pos= 496,301
+			self.b027.pos= 496,301
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b013.pos= 344,900
-			self.b014.pos= 496,242	
-			self.b015.pos= 496,183			
+			self.b012.pos= 496,242	
+			self.b014.pos= 496,183			
 			self.b007.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
+			self.b026.pos= 344,900
+			self.b015.pos= 496,124
+			self.b028.pos= 344,900	
+			self.b029.pos= 344,900
 		else:
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
 			self.b010.pos= 1000,0
 			self.b014.pos= 496,900
 			self.b015.pos= 496,900
+			self.b027.pos= 496,900
 
 	def tools(self):
 		if self.b005.state=="down":
@@ -3247,9 +3815,17 @@ class LFOScreen(Screen):
 			self.b007.state="normal"
 			self.b006.state="normal"
 			self.b010.pos= 0,0
+			self.b026.pos= 344,301
+			self.b027.pos= 344,900
+			self.b028.pos= 344,242
+			self.b029.pos= 419,242
 		else:
 			self.b013.pos= 344,900			
-			self.b010.pos= 1000,0	
+			self.b010.pos= 1000,0
+			self.b026.pos= 344,900	
+			self.b027.pos= 344,900
+			self.b028.pos= 344,900
+			self.b029.pos= 344,900
 
 
 	def mode(self,num):
@@ -3483,9 +4059,16 @@ class LFOScreen(Screen):
 			self.b024.text=str(int(-1 * txt))
 
 	def UIrefresh(self,Coord):
-		Lline7.pos=(Coord[0][0]-10,Coord[0][1]-10)	
-		Lline1.points=[(50,400 - Coord[0][1]),(Coord[0][0],Coord[0][1])]
-		Lline4.points=[(750,400 - Coord[0][1]),(Coord[0][0],Coord[0][1])]
+		if polaritylfo[trackselected-1]==0:
+			Lline7.pos=(Coord[0][0]-10,Coord[0][1]-10)	
+			Lline1.points=[(50,400 - Coord[0][1]),(Coord[0][0],Coord[0][1])]
+			Lline4.points=[(750,400 - Coord[0][1]),(Coord[0][0],Coord[0][1])]
+		else:
+			Lline7.pos=(Coord[0][0]-10,Coord[0][1]-10)
+			Lline1.points=[(50,20),(Coord[0][0],Coord[0][1])]
+			Lline4.points=[(750,20),(Coord[0][0],Coord[0][1])]
+		#print(polaritylfo)
+
 
 
 	def updateEnv(self):
@@ -3544,6 +4127,35 @@ class LFOScreen(Screen):
 	def test2(self):
 		self.Phase(-20)
 
+	def polarity(self):
+		global polaritylfo
+		if polaritylfo[trackselected-1]==0:
+			polaritylfo[trackselected-1]=1
+			self.b026.text="UNIPOLAR"
+			self.UIrefresh(EnvPool2[trackselected-1])
+		else:
+			polaritylfo[trackselected-1]=0
+			self.b026.text="BIPOLAR"
+			self.UIrefresh(EnvPool2[trackselected-1])
+
+	def addpoint(self):
+		global point
+		point=[Point1,Point2, Point3, Point4, Point5, Point6, Point7, Point8]
+		DrawPoints[trackselected-1] = DrawPoints[trackselected-1] + 1
+		for i in range(DrawPoints[trackselected-1]):
+			point[i].pos=100+(100*i),100
+		print(DrawPoints)
+
+	def rempoint(self):
+		DrawPoints[trackselected-1] = DrawPoints[trackselected-1] - 1
+		for i in range(DrawPoints[trackselected-1]):
+			point[DrawPoints[trackselected-1]].pos=900,100
+		print(DrawPoints)
+
+
+
+
+
 
 ##############################################################################################
 ##############################################################################################
@@ -3589,50 +4201,34 @@ class ADSRScreen(Screen):
 		Lline6 = self.ids.w_canvas.canvas.get_group('f')[0]
 		Lline7 = self.ids.w_canvas.canvas.get_group('g')[0]
 		Lline8 = self.ids.w_canvas.canvas.get_group('h')[0]		
-
 		global adsrbutmode
 		adsrbutmode=0
+		self.mode(0)
 		print(trackselected-1)
 		global trackmode
 		global loopsize
 		if trackmode[trackselected-1]!=3:
 			loopsize[trackselected-1]=64
 			self.reset()
+			q2.put(loopsize)
 		trackmode[trackselected-1]=3
 		print('trackmode',trackmode[trackselected-1])
 		self.triginfo()
-		self.clearsequence()
-		self.deleteLFO()
+		clearsequence()
+		deleteLFO()
 		self.UIrefresh()
 		self.LoopSdisplay()
+		self.b006.text=str(trackselected)+ ": ADSR"
+		if y1.value!=0:self.b0003.pos=185,419
+		else:self.b0003.pos=1185,419
 
-	def clearsequence(self):
-		global sequencepool2
-		global sequencepool3
-		sequencepool2[trackselected-1]=[]
-		for i,elem in enumerate(sequencepool3[trackselected-1]): sequencepool3[trackselected-1][i]=[]
-		q1.put(sequencepool2)
-		q6.put(sequencepool3[trackselected-1])
-		#print(sequencepool3[trackselected-1])
+	def projectmode(self):
+		if projectmode==0:self.manager.current = 'song_mode'
+		else:self.manager.current = 'MixerScreen'
 
-
-	def deleteLFO(self):
-		global EnvPool2
-		global EnvPool3
-		EnvPool2[trackselected-1]=[0]
-		EnvPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
-		#print("deleted",EnvPool3[trackselected-1])
-		#print("EnvPool0",EnvPool0)
-		q7.put(EnvPool3[trackselected-1])
-
-	def deleteADSR(self):
-		global ADSRPool2
-		global ADSRPool3
-		ADSRPool2[trackselected-1]=[0]
-		ADSRPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
-		q8.put(ADSRPool3[trackselected-1])
-
-
+	def projectmdoedisplay(self):
+		if projectmode==0:self.b008.text= 'SONG'
+		else:self.b008.text= 'LIVE'
 
 	def closemenu(self):
 		self.b5017.pos=1329,305
@@ -3674,10 +4270,12 @@ class ADSRScreen(Screen):
 			self.b020.pos= 344,900
 			self.b022.pos= 344,900	
 			self.b018.pos= 496,900	
-			self.b019.pos= 496,900			
+			self.b019.pos= 496,900	
+			self.b023.pos= 496,900			
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
+			self.projectmdoedisplay()
 		else:
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
@@ -3696,7 +4294,8 @@ class ADSRScreen(Screen):
 			self.b020.pos= 344,900
 			self.b022.pos= 344,900
 			self.b018.pos= 496,242	
-			self.b019.pos= 496,183				
+			self.b019.pos= 496,183	
+			self.b023.pos= 496,124				
 			self.b007.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -3705,6 +4304,7 @@ class ADSRScreen(Screen):
 			self.b012.pos= 496,900
 			self.b018.pos= 496,900	
 			self.b019.pos= 496,900	
+			self.b023.pos= 496,900
 			self.b010.pos= 1000,0
 
 	def tools(self):
@@ -3719,7 +4319,8 @@ class ADSRScreen(Screen):
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b018.pos= 496,900	
-			self.b019.pos= 496,900	
+			self.b019.pos= 496,900
+			self.b023.pos= 496,900	
 			self.b007.state="normal"
 			self.b006.state="normal"
 			self.b010.pos= 0,0
@@ -3793,14 +4394,9 @@ class ADSRScreen(Screen):
 
 	def mode(self,num):
 		global adsrbutmode
-		if num==1:
-			if adsrbutmode==1:
-				adsrbutmode=0
-				self.b023.state='normal'
-			else:
-				adsrbutmode=1
-				self.b023.state='down'
-				w2.value=0
+		if num==0:
+			self.b003.state='normal'
+			self.b004.state='normal'
 		if num==2:
 			if adsrbutmode==2:
 				adsrbutmode=0
@@ -3817,51 +4413,6 @@ class ADSRScreen(Screen):
 				adsrbutmode=3
 				self.b004.state='down'
 				w2.value=0
-		if num==4:
-			if adsrbutmode==4:
-				adsrbutmode=0
-				self.b025.state='normal'
-			else:
-				adsrbutmode=4
-				self.b025.state='down'
-				w2.value=0
-		if num==5:
-			if adsrbutmode==5:
-				adsrbutmode=0
-				self.b024.state='normal'
-			else:
-				adsrbutmode=5
-				self.b024.state='down'
-				w2.value=0				
-		if num==6:
-			if adsrbutmode==6:
-				adsrbutmode=0
-				self.b028.state='normal'
-			else:
-				adsrbutmode=6
-				self.b028.state='down'
-				w2.value=0	
-		if num==7:
-			if adsrbutmode==7:
-				adsrbutmode=0
-				self.b026.state='normal'
-			else:
-				adsrbutmode=7
-				self.b026.state='down'
-				w2.value=0	
-		if num==8:
-			if adsrbutmode==8:
-				adsrbutmode=0
-				self.b027.state='normal'
-			else:
-				adsrbutmode=8
-				self.b027.state='down'
-				w2.value=0	
-		if num==9:
-			adsrbutmode=0
-			self.b003.state='normal'
-			self.b004.state='normal'
-			self.b020.state='normal'
 		print(("buton mode",adsrbutmode))
 
 	def closemenus(self):
@@ -3934,8 +4485,6 @@ class ADSRScreen(Screen):
 			if encoderpushed==1:
 				adsrbutmode=0
 				self.b003.state='normal'
-
-
 		if adsrbutmode==3:
 			if encodervalue>0:
 				wheel+=1
@@ -3955,9 +4504,7 @@ class ADSRScreen(Screen):
 						self.LoopSdisplay()
 			if encoderpushed==1:
 				adsrbutmode=0
-				self.b004.state='normal'
-
-							
+				self.b004.state='normal'						
 		global playing
 		if v6.value==1:
 			v6.value=2
@@ -4185,22 +4732,47 @@ class RandomScreen(Screen):
 		if playing==1:
 			self.b001.state="down"
 			self.b001.text="%s"%(icon('icon-pause', 22))
+			Clock.schedule_interval(self.CalculateRandom, 0.002)
 		else:
 			self.b001.state="normal"
-			self.b001.text="%s"%(icon('icon-play', 22))											
+			self.b001.text="%s"%(icon('icon-play', 22))	
+			Clock.unschedule(self.CalculateRandom)										
 		global trackmode
-		global loopsize
-		trackmode[trackselected-1]=2
+		if trackmode[trackselected-1]!=4:
+			clearsequence()
+			deleteLFO()
+			deleteADSR()
+		trackmode[trackselected-1]=4
 		print('trackmode',trackmode[trackselected-1])
-		global lfobutmode
-		lfobutmode=6
-		print(trackselected-1)
-		
 
+		global randombutmode
+		randombutmode=0
+		self.mode(0)
+		global loopsize
+		loopsize[trackselected-1]=64
+		q2.put(loopsize)
+		print(trackselected-1)
+		global points
+		points=[self.ids.w_canvas.canvas.get_group('a')[0],self.ids.w_canvas.canvas.get_group('b')[0],self.ids.w_canvas.canvas.get_group('c')[0],self.ids.w_canvas.canvas.get_group('d')[0],self.ids.w_canvas.canvas.get_group('e')[0],self.ids.w_canvas.canvas.get_group('f')[0]]
+		self.init()
+		self.b006.text=str(trackselected)+ ": RANDOM"
+		if y1.value!=0:self.b0003.pos=185,419
+		else:self.b0003.pos=1185,419
+
+	def projectmode(self):
+		if projectmode==0:self.manager.current = 'song_mode'
+		else:self.manager.current = 'MixerScreen'
+
+	def projectmdoedisplay(self):
+		if projectmode==0:self.b008.text= 'SONG'
+		else:self.b008.text= 'LIVE'
 
 	def leaving(self):
 		Clock.unschedule(self.listening)
 		print("unschedule seq")
+		try:Clock.unschedule(self.CalculateRandom)
+		except:pass
+
 
 
 	def menu(self):
@@ -4211,10 +4783,12 @@ class RandomScreen(Screen):
 			self.b012.pos= 496,900
 			self.b014.pos= 496,900
 			self.b015.pos= 496,900
-			self.b013.pos= 344,900		
+			self.b013.pos= 344,900
+			self.b016.pos= 496,900			
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
+			self.projectmdoedisplay()
 		else:
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
@@ -4229,7 +4803,8 @@ class RandomScreen(Screen):
 			self.b009.pos= 648,900
 			self.b013.pos= 344,900
 			self.b014.pos= 496,242	
-			self.b015.pos= 496,183			
+			self.b015.pos= 496,183
+			self.b016.pos= 496,124				
 			self.b007.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -4239,6 +4814,7 @@ class RandomScreen(Screen):
 			self.b010.pos= 1000,0
 			self.b014.pos= 496,900
 			self.b015.pos= 496,900
+			self.b016.pos= 496,900
 
 	def tools(self):
 		if self.b005.state=="down":
@@ -4247,6 +4823,7 @@ class RandomScreen(Screen):
 			self.b012.pos= 496,900
 			self.b014.pos= 496,900
 			self.b015.pos= 496,900
+			self.b016.pos= 496,900
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
 			self.b007.state="normal"
@@ -4258,53 +4835,18 @@ class RandomScreen(Screen):
 
 
 	def mode(self,num):
-		global lfobutmode
-		if num==1:
-			if lfobutmode==1:
-				lfobutmode=0
-				self.b020.state='normal'
-			else:
-				lfobutmode=1
-				self.b020.state='down'
-				w2.value=0
+		global randombutmode
+		if num==0:
+			self.b003.state='normal'
 		if num==2:
-			if lfobutmode==2:
-				lfobutmode=0
+			if randombutmode==2:
+				randombutmode=0
 				self.b003.state='normal'
 			else:
-				lfobutmode=2
+				randombutmode=2
 				self.b003.state='down'
 				w2.value=0
-		if num==3:
-			if lfobutmode==3:
-				lfobutmode=0
-				self.b004.state='normal'
-			else:
-				lfobutmode=3
-				self.b004.state='down'
-				w2.value=0
-		if num==4:
-			if lfobutmode==4:
-				lfobutmode=0
-				self.b025.state='normal'
-			else:
-				lfobutmode=4
-				self.b025.state='down'
-				w2.value=0
-		if num==5:
-			if lfobutmode==5:
-				lfobutmode=0
-				self.b024.state='normal'
-			else:
-				lfobutmode=5
-				self.b024.state='down'
-				w2.value=0				
-		if num==6:
-			lfobutmode=6
-			self.b003.state='normal'
-			self.b004.state='normal'
-			self.b020.state='normal'
-		print(("buton mode",lfobutmode))
+		print(("buton mode",randombutmode))
 
 
 
@@ -4325,8 +4867,11 @@ class RandomScreen(Screen):
 			v1.value=1
 			playing=1
 			self.b001.text="%s"%(icon('icon-pause', 22))
+			self.delseq()
+			Clock.schedule_interval(self.CalculateRandom, 0.002)
 		else:
 			self.b001.text="%s"%(icon('icon-play', 22))
+			Clock.unschedule(self.CalculateRandom)
 			playing=0
 			v1.value=2
 
@@ -4335,39 +4880,21 @@ class RandomScreen(Screen):
 		global playing
 		self.b001.state="normal"
 		self.b001.text="%s"%(icon('icon-play', 22))
+		Clock.unschedule(self.CalculateRandom)
 		v1.value=0
 		playing=0
 
 
 	def listening(self,*args):
 		global wheel
-		global lfobutmode
-		global loopsize
+		global randombutmode
 		global BPM
 		encodervalue=w1.value
 		encoderpushed=w2.value
 		w1.value=0
 		step=v2.value
-		if lfobutmode==0: pass
-		if lfobutmode==1:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.rgt()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.lft()
-			if encoderpushed==1:
-				lfobutmode=0
-				self.b023.state='normal'
-				self.closemenus()
-
-		if lfobutmode==2:
+		if randombutmode==0: pass
+		if randombutmode==2:
 			if encodervalue>0:
 				wheel+=1
 				if wheel==2:
@@ -4385,67 +4912,128 @@ class RandomScreen(Screen):
 						self.b003.text=str(BPM)
 						v4.value=BPM
 			if encoderpushed==1:
-				lfobutmode=0
+				randombutmode=0
 				self.b003.state='normal'
-
-		if lfobutmode==3:
-			if encodervalue>0:
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					if loopsize[trackselected-1]<16*16:
-						loopsize[trackselected-1]+=16
-						q2.put(loopsize)	
-						self.LoopSdisplay()				
-			elif encodervalue<0:
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					if loopsize[trackselected-1]>16:
-						loopsize[trackselected-1]-=16
-						q2.put(loopsize)
-						self.LoopSdisplay()
-			if encoderpushed==1:
-				lfobutmode=0
-				self.b004.state='normal'
-
-		if lfobutmode==4:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.Phase(20)
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.Phase(-20)
-			if encoderpushed==1:
-				lfobutmode=0
-				self.b025.state='normal'
-				self.closemenus()
 		global playing
 		if v6.value==1:
 			v6.value=2
 			playing=1
 			self.b001.text="%s"%(icon('icon-pause', 22))
 			self.b001.state='down'
+			#print('launched')
+			Clock.schedule_interval(self.CalculateRandom, 0.002)
+
 		elif v6.value==0:
 			self.b001.text="%s"%(icon('icon-play', 22))
 			self.b001.state='normal'
 			playing=0
 			v6.value=2
+			Clock.unschedule(self.CalculateRandom)
+
+
+	def CalculateRandom(self,*args):
+		global randomcalculated
+		#global resetedrandom
+		count=v2.value%64
+		# if count==0 and resetedrandom==0:
+		# 	resetedrandom=1
+		# 	self.delseq()
+
+		if count%4==0 and randomcalculated==0:
+			randomcalculated=1
+			self.randomizing(count)
+		elif count%4==2 and randomcalculated==1:
+			randomcalculated=0
+			#resetedrandom=0
+		elif count%4==1 and randomcalculated==0:
+			randomcalculated=1
+			self.randomizing(count)
+
+	def delseq(self):
+		global sequencepool3
+		print(sequencepool3[trackselected-1])
+		for l in range(65):sequencepool3[trackselected-1][l]=[]
+		print("deleted seq3")
+		q6.put(sequencepool3[trackselected-1])
+
+	def randomizing(self,count):
+		global sequencepool3
+		global Ratchetcount
+		r=random.random()
+		#print(count)
+		#print("Random",r*100,"Desnity",RandomDensity[trackselected-1])
+		#mettre le random calcu dans le else?
+		if Ratchetcount>0:
+			Ratchetcount-=1
+		else:
+			self.delstep(count+4)
+
+			if r*100<RandomDensity[trackselected-1]:
+				ratch=RandomRatchet[trackselected-1]
+				Ratchetcount=RandomRatchet[trackselected-1]
+				n=random.random()*100
+				note=36+int(RandomTemp[trackselected-1]*n/280)
+				while ratch>=0:
+					#print(ratch,"ratcheting steps")
+					self.delstep(count+4+ratch*4)
+					sequencepool3[trackselected-1][(count+4+ratch*4)%64].append([note,1,4])
+					sequencepool3[trackselected-1][(count+8+ratch*4)%64].append([note,0,4])
+					sequencepool3[trackselected-1][(count+4+ratch*4)%64]=sorted(sequencepool3[trackselected-1][(count+4+ratch*4)%64],key=operator.itemgetter(1,0))
+					sequencepool3[trackselected-1][(count+8+ratch*4)%64]=sorted(sequencepool3[trackselected-1][(count+8+ratch*4)%64],key=operator.itemgetter(1,0))
+					ratch-=1
+			q6.put(sequencepool3[trackselected-1])
+				#print(sequencepool3[trackselected-1])
+
+	def delstep(self,step):
+		global sequencepool3
+		for elem in sequencepool3[trackselected-1][(step)%64]:
+			if elem[1]==1:
+				sequencepool3[trackselected-1][(step)%64].remove(elem)
+				sequencepool3[trackselected-1][(step+4)%64].remove([elem[0],0,elem[2]])
+				#print(sequencepool3[trackselected-1])
+				#print("deleted the sequence#####")	
+			#q6.put(sequencepool3[trackselected-1])
+
 
 	def label1(self, *args):
-
+		global RandomRatchet
+		positions=[57,193,327,460,594,727]
 		self.sld1.value=int(args[1])
-		print(self.sld1.value)
 		self.lbl1.text=str(int(self.sld1.value))
+		RandomRatchet[trackselected-1]=int(args[1])
+		for i in range(6):
+			if i==int(args[1]):
+				points[int(args[1])].pos=[1000,67]
+			else: points[i].pos=[positions[i],67]
 
-		
+	def label2(self, *args):
+		global RandomTemp
+		self.sld2.value=int(args[1])
+		self.lbl2.text=str(int(self.sld2.value))
+		RandomTemp[trackselected-1]=int(args[1])
 
+	def label3(self, *args):
+		global RandomDensity
+		self.sld3.value=int(args[1])
+		self.lbl3.text=str(int(self.sld3.value))
+		RandomDensity[trackselected-1]=int(args[1])
+
+	def init(self):
+		self.sld1.value=RandomRatchet[trackselected-1]
+		self.sld2.value=RandomTemp[trackselected-1]
+		self.sld3.value=RandomDensity[trackselected-1]
+		self.lbl1.text=str(RandomRatchet[trackselected-1])
+		self.lbl2.text=str(RandomTemp[trackselected-1])
+		self.lbl3.text=str(RandomDensity[trackselected-1])
+
+	def reset(self):
+		global RandomTemp
+		global RandomDensity
+		global RandomRatchet
+		RandomTemp[trackselected-1]=20
+		RandomDensity[trackselected-1]=20
+		RandomRatchet[trackselected-1]=0
+		self.init()
 
 
 
@@ -4474,22 +5062,100 @@ class EuclideanScreen(Screen):
 		if playing==1:
 			self.b001.state="down"
 			self.b001.text="%s"%(icon('icon-pause', 22))
+			Clock.schedule_interval(self.animate, 0.002) 
 		else:
 			self.b001.state="normal"
-			self.b001.text="%s"%(icon('icon-play', 22))											
+			self.b001.text="%s"%(icon('icon-play', 22))	
+			Clock.unschedule(self.animate) 				
+		l1 = self.ids.w_canvas.canvas.get_group('a')[0]
+		l2 = self.ids.w_canvas.canvas.get_group('b')[0]
+		l3 = self.ids.w_canvas.canvas.get_group('c')[0]				
+		l4 = self.ids.w_canvas.canvas.get_group('d')[0]
+		l5 = self.ids.w_canvas.canvas.get_group('e')[0]
+		l6 = self.ids.w_canvas.canvas.get_group('f')[0]
+		l7 = self.ids.w_canvas.canvas.get_group('g')[0]
+		l8 = self.ids.w_canvas.canvas.get_group('h')[0]
+		l9 = self.ids.w_canvas.canvas.get_group('i')[0]
+		l10 = self.ids.w_canvas.canvas.get_group('j')[0]
+		l11 = self.ids.w_canvas.canvas.get_group('k')[0]				
+		l12 = self.ids.w_canvas.canvas.get_group('l')[0]
+		l13 = self.ids.w_canvas.canvas.get_group('m')[0]
+		l14 = self.ids.w_canvas.canvas.get_group('n')[0]
+		l15 = self.ids.w_canvas.canvas.get_group('o')[0]
+		l16 = self.ids.w_canvas.canvas.get_group('p')[0]
+		c1 = self.ids.w_canvas.canvas.get_group('q')[0]	
+		g1 = self.ids.w_canvas.canvas.get_group('r')[0]	
+		g2 = self.ids.w_canvas.canvas.get_group('s')[0]	
+		g3 = self.ids.w_canvas.canvas.get_group('t')[0]
+		g4 = self.ids.w_canvas.canvas.get_group('u')[0]	
+		g5 = self.ids.w_canvas.canvas.get_group('v')[0]	
+		g6 = self.ids.w_canvas.canvas.get_group('w')[0]	
+		g7 = self.ids.w_canvas.canvas.get_group('x')[0]
+		g8 = self.ids.w_canvas.canvas.get_group('y')[0]
+		g9 = self.ids.w_canvas.canvas.get_group('z')[0]	
+		g10 = self.ids.w_canvas.canvas.get_group('z1')[0]	
+		g11 = self.ids.w_canvas.canvas.get_group('z2')[0]
+		g12 = self.ids.w_canvas.canvas.get_group('z3')[0]
+		g13 = self.ids.w_canvas.canvas.get_group('z4')[0]	
+		g14 = self.ids.w_canvas.canvas.get_group('z5')[0]	
+		g15 = self.ids.w_canvas.canvas.get_group('z6')[0]
+		g16 = self.ids.w_canvas.canvas.get_group('z7')[0]	
+		global items
+		global itemscolor
+		items=[l1,l2,l3,l4,l5,l6,l7,l8,l9,l10,l11,l12,l13,l14,l15,l16]
+		itemscolor=[g1,g2,g3,g4,g5,g6,g7,g8,g9,g10,g11,g12,g13,g14,g15,g16]		
 		global trackmode
 		global loopsize
-		trackmode[trackselected-1]=2
+		if trackmode[trackselected-1]!=5:
+			clearsequence()
+			deleteLFO()
+			deleteADSR()
+		trackmode[trackselected-1]=5
 		print('trackmode',trackmode[trackselected-1])
-		global lfobutmode
-		lfobutmode=6
+		global euclibutmode
+		euclibutmode=0
+		self.mode(0)
 		print(trackselected-1)
+		#self.posbutton()
+		self.init()
+		self.b006.text=str(trackselected)+ ":EUCLIDEAN"
+		if y1.value!=0:self.b0003.pos=185,419
+		else:self.b0003.pos=1185,419
 		
+	def projectmode(self):
+		if projectmode==0:self.manager.current = 'song_mode'
+		else:self.manager.current = 'MixerScreen'
+
+	def projectmdoedisplay(self):
+		if projectmode==0:self.b008.text= 'SONG'
+		else:self.b008.text= 'LIVE'		
+
+	def init(self):
+		#print("here")
+		self.label2()
+		self.label1()
+		self.posbutton()
+		self.LoopSdisplay()
+
 
 
 	def leaving(self):
 		Clock.unschedule(self.listening)
 		print("unschedule seq")
+
+
+	def displayinfo(self):
+		global manuelmodeeucli
+		if manuelmodeeucli==0:
+			manuelmodeeucli=1
+			self.b016.text="MANUAL: ON"
+		else:
+			manuelmodeeucli=0
+			self.b016.text="MANUAL: OFF"
+		self.posbutton()
+
+
+
 
 
 	def menu(self):
@@ -4500,10 +5166,13 @@ class EuclideanScreen(Screen):
 			self.b012.pos= 496,900
 			self.b014.pos= 496,900
 			self.b015.pos= 496,900
-			self.b013.pos= 344,900		
+			self.b016.pos= 344,900	
+			self.b013.pos= 344,900	
+			self.b017.pos= 496,900		
 			self.b006.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
+			self.projectmdoedisplay()
 		else:
 			self.b008.pos= 648,900
 			self.b009.pos= 648,900
@@ -4518,7 +5187,9 @@ class EuclideanScreen(Screen):
 			self.b009.pos= 648,900
 			self.b013.pos= 344,900
 			self.b014.pos= 496,242	
-			self.b015.pos= 496,183			
+			self.b015.pos= 496,183	
+			self.b016.pos= 344,900
+			self.b017.pos= 496,124			
 			self.b007.state="normal"
 			self.b005.state="normal"
 			self.b010.pos= 0,0
@@ -4528,10 +5199,443 @@ class EuclideanScreen(Screen):
 			self.b010.pos= 1000,0
 			self.b014.pos= 496,900
 			self.b015.pos= 496,900
+			self.b017.pos= 496,900
 
 	def tools(self):
 		if self.b005.state=="down":
 			self.b013.pos= 344,360		
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b016.pos= 344,301
+			self.b017.pos= 496,900
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b007.state="normal"
+			self.b006.state="normal"
+			self.b010.pos= 0,0
+		else:
+			self.b013.pos= 344,900	
+			self.b016.pos= 344,900		
+			self.b010.pos= 1000,0	
+
+
+	def mode(self,num):
+		global euclibutmode
+		if num==0:
+			self.b003.state='normal'
+			self.b004.state='normal'
+		if num==2:
+			if euclibutmode==2:
+				euclibutmode=0
+				self.b003.state='normal'
+			else:
+				euclibutmode=2
+				self.b003.state='down'
+				w2.value=0
+		if num==3:
+			if euclibutmode==3:
+				euclibutmode=0
+				self.b004.state='normal'
+			else:
+				euclibutmode=3
+				self.b004.state='down'
+				w2.value=0
+		print(("buton mode",euclibutmode))
+
+
+
+	def closemenus(self):
+		if self.b007.state=="down":
+			self.b007.state="normal"
+			self.menu()
+		if self.b006.state=="down":
+			self.b006.state="normal"
+			self.seqmode()
+		if self.b005.state=="down":
+			self.b005.state="normal"
+			self.tools()
+
+
+
+	def listening(self,*args):
+		global wheel
+		global euclibutmode
+		global loopsize
+		global BPM
+		encodervalue=w1.value
+		encoderpushed=w2.value
+		w1.value=0
+		step=v2.value
+		if euclibutmode==0: pass
+		if euclibutmode==2:
+			if encodervalue>0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if BPM<200:
+						BPM+=1
+						self.b003.text=str(BPM)
+						v4.value=BPM
+			elif encodervalue<0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if BPM>30:
+						BPM-=1
+						self.b003.text=str(BPM)
+						v4.value=BPM
+			if encoderpushed==1:
+				euclibutmode=0
+				self.b003.state='normal'
+
+		if euclibutmode==3:
+			if encodervalue>0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if loopsize[trackselected-1]<16*16:
+						loopsize[trackselected-1]+=16
+						q2.put(loopsize)
+						self.LoopSdisplay()				
+			elif encodervalue<0:
+				wheel+=1
+				if wheel==2:
+					wheel=0
+					if loopsize[trackselected-1]>16:
+						loopsize[trackselected-1]-=16
+						q2.put(loopsize)
+						self.LoopSdisplay()
+			if encoderpushed==1:
+				euclibutmode=0
+				self.b004.state='normal'
+
+		global playing
+		if v6.value==1:
+			v6.value=2
+			playing=1
+			self.b001.text="%s"%(icon('icon-pause', 22))
+			self.b001.state='down'
+			Clock.schedule_interval(self.animate, 0.002) 
+		elif v6.value==0:
+			self.b001.text="%s"%(icon('icon-play', 22))
+			self.b001.state='normal'
+			playing=0
+			v6.value=2
+			Clock.unschedule(self.animate)
+
+	def LoopSdisplay(self):
+		#self.l1.text=str(loopsize[trackselected-1]/16)
+		self.b004.text=str(loopsize[trackselected-1]/16)
+
+
+
+	def update1(self, *args):
+		global stepeucli
+		stepeucli[trackselected-1]=int(args[1])
+
+	def update2(self, *args):
+		global pulseeucli
+		pulseeucli[trackselected-1]=int(args[1])
+		#print(pulseeucli) 
+
+	def label1(self):
+		self.sld1.value=stepeucli[trackselected-1]
+		self.lbl1.text=str(int(stepeucli[trackselected-1]))
+
+	def label2(self):
+		self.sld2.value=pulseeucli[trackselected-1]
+		self.lbl2.text=str(int(pulseeucli[trackselected-1]))
+		#print("lsd2",self.sld2.value)
+
+	def posbutton(self):
+		#print("pos")
+		r=170
+		step = stepeucli[trackselected-1]
+		teta=2*pi/step
+		for n in range(16):
+			if n<step:
+				items[n].pos=[r*sin((n)*teta)+520, r*cos((n)*teta)+200]
+			else:
+				items[n].pos=[1000,1000]
+		self.colorbutton()
+
+	def manueloff(self):
+		global manuelmodeeucli
+		manuelmodeeucli=0  
+		self.b016.text="MANUAL: OFF"
+
+
+	def colorbutton(self, *args):
+		r=170
+		step = stepeucli[trackselected-1]
+		teta=2*pi/step
+		if manuelmodeeucli==0:
+			self.Eucli() 
+			#print("Calling Eucli")
+		for i in range(16):
+			if EucliPool2[trackselected-1][i] == 1:
+				itemscolor[i].pos=[r*sin((i)*teta)+520, r*cos((i)*teta)+200]
+			else:
+				itemscolor[i].pos=[1000,1000]
+
+	def reposition(self):
+		r=170
+		step = stepeucli[trackselected-1]
+		teta=2*pi/step
+		for n in range(16):
+			if n<step:
+				items[n].pos=[r*sin((n)*teta)+520, r*cos((n)*teta)+200]
+			else:
+				items[n].pos=[1000,1000]
+		for i in range(16):
+			if EucliPool2[trackselected-1][i] == 1:
+				itemscolor[i].pos=[r*sin((i)*teta)+520, r*cos((i)*teta)+200]
+			else:
+				itemscolor[i].pos=[1000,1000]
+
+
+
+	def Eucli(self):
+		global EucliPool2
+		steps=stepeucli[trackselected-1]
+		pulses=pulseeucli[trackselected-1]
+		#print(steps, pulses)
+		count=0	
+		ResultOffset=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+		Result=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+		ResultC=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+		for i in range(steps):
+			count=count+pulses
+			if count>=steps:
+				count=count%steps
+				Result[i]=1
+		for j in range(steps):
+			ResultC[j]=Result[(j-1)%steps]
+		for i in range(steps):
+			ResultOffset[i]=ResultC[(i-EucliOffset[trackselected-1])%steps]
+		#print("ResultOffset",ResultOffset)
+		EucliPool2[trackselected-1]=ResultOffset
+		self.convert2to3()
+
+
+	def start(self):
+		global playing
+		if self.b001.state=="down":
+			v1.value=1
+			playing=1
+			self.b001.text="%s"%(icon('icon-pause', 22))
+			Clock.schedule_interval(self.animate, 0.002) 
+		else:
+			self.b001.text="%s"%(icon('icon-play', 22))
+			playing=0
+			Clock.unschedule(self.animate)
+			v1.value=2 
+
+
+	def stop(self):
+		global playing
+		self.b001.state="normal"
+		self.b001.text="%s"%(icon('icon-play', 22))
+		Clock.unschedule(self.animate)
+		v1.value=0
+		playing=0
+
+
+	def animate(self, *args):
+		counter=(v2.value-1)%loopsize[trackselected-1]
+		#while counter>=loopsize[trackselected-1]:counter-=loopsize[trackselected-1]
+		if counter%4==0:
+			#self.posbutton()
+			self.reposition()
+			button_number=int((counter/4)%stepeucli[trackselected-1])
+			color_number=button_number
+			anim1 = Animation(pos=[itemscolor[color_number].pos[0]-10,itemscolor[color_number].pos[1]-10],size=(40, 40),duration =0.1)+Animation(pos=[itemscolor[color_number].pos[0]+0,itemscolor[color_number].pos[1]+0],size=(20, 20),duration =0.1)
+			anim2 = Animation(pos=[items[button_number].pos[0]-5,items[button_number].pos[1]-5],size=(30, 30),duration =0.1)+Animation(pos=[items[button_number].pos[0]+0,items[button_number].pos[1]+0],size=(20, 20),duration =0.1)	
+			anim2.start(items[button_number])
+			#print("but number", button_number, "Result", Result,(button_number-offset)%stepeucli[trackselected-1])
+			if EucliPool2[trackselected-1][color_number]==1:
+				#print("animating")
+				anim1.start(itemscolor[color_number])
+
+	def on_touch_move(self, touch):
+		rayon=20
+		global ChangedEucli
+		global EucliPool2
+		global EucliOffset
+		for i in range(stepeucli[trackselected-1]):
+				if (items[i].pos[0] - rayon) <= touch.pos[0] <= (items[i].pos[0] + rayon):
+					if (items[i].pos[1] - rayon) <= touch.pos[1] <= (items[i].pos[1] + rayon):
+						#print(i)
+						if self.b016.text=="MANUAL: ON":
+							if ChangedEucli==0:
+								color_number=(i)%stepeucli[trackselected-1]
+								ChangedEucli=1
+								if EucliPool2[trackselected-1][color_number]==0:
+									EucliPool2[trackselected-1][color_number]=1
+									#itemscolor[color_number].pos=[r*sin((color_number)*teta)+520, r*cos((color_number)*teta)+200]
+								else:
+									EucliPool2[trackselected-1][color_number]=0
+									#itemscolor[color_number].pos=[1000,1000]
+								self.colorbutton()
+
+								#print("EucliPool2",EucliPool2[trackselected-1])
+						else:
+							EucliOffset[trackselected-1]=(i)%stepeucli[trackselected-1]
+							self.posbutton()
+						self.convert2to3()
+						break
+
+		else:
+			ChangedEucli=0
+
+				
+	def Reset(self):
+		global pulseeucli
+		global stepeucli
+		global EucliOffset
+		global EucliPool2
+		self.manueloff()
+		pulseeucli[trackselected-1]=1
+		stepeucli[trackselected-1]=7
+		EucliOffset[trackselected-1]=0
+		self.posbutton()
+		self.init()
+
+
+	def convert2to3(self):
+		global sequencepool3
+		#print("converting")
+		#print('euclippol2',EucliPool2)
+		for l in range(64*4+1):sequencepool3[trackselected-1][l]=[]
+		for i in range(64):
+			if EucliPool2[trackselected-1][i%stepeucli[trackselected-1]]==1:
+				sequencepool3[trackselected-1][i*4].append([36,1,4])
+				sequencepool3[trackselected-1][i*4+4].append([36,0,4])
+				sequencepool3[trackselected-1][i*4]=sorted(sequencepool3[trackselected-1][i*4],key=operator.itemgetter(1,0))
+				sequencepool3[trackselected-1][i*4+4]=sorted(sequencepool3[trackselected-1][i*4+4],key=operator.itemgetter(1,0))
+				
+				#sequencepool3[trackselected-1][(i+stepeucli[trackselected-1])*4].append([36,1,4])
+				#sequencepool3[trackselected-1][(i+8)*4+4].append([36,0,4])
+				#sequencepool3[trackselected-1][(i+8)*4]=sorted(sequencepool3[trackselected-1][i*4],key=operator.itemgetter(1,0))
+				#sequencepool3[trackselected-1][(i+8)*4+4]=sorted(sequencepool3[trackselected-1][i*4+4],key=operator.itemgetter(1,0))
+				
+		q6.put(sequencepool3[trackselected-1])
+
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+
+class MixerScreen(Screen):
+
+	def on_enter(self):
+		w1.value=0
+		Clock.schedule_interval(self.listening, 0.002)
+		self.b003.text=str(BPM)
+		if playing==1:
+			self.b001.state="down"
+			self.b001.text="%s"%(icon('icon-pause', 22))
+		else:
+			self.b001.state="normal"
+			self.b001.text="%s"%(icon('icon-play', 22))											
+		global loopsize
+		global livebutmode
+		livebutmode=0
+		self.mode(0)
+		print(trackselected-1)
+		self.infos()
+		global loopsizeS
+		self.b004.text=str(loopsizeS/64)
+		global listbuttonlive
+		listbuttonlive=[self.b01,self.b02,self.b03,self.b04,self.b05,self.b06,self.b07,self.b08,self.b09,self.b0100,self.b0110,self.b0120,self.b0130,self.b01400,self.b0150,self.b0160]
+		if loopsizeS>32*64:
+			loopsizeS=32*64
+			v3.value=loopsizeS
+			self.mute()
+		global projectmode
+		if projectmode==0:
+			projectmode=1
+			for i,elem in enumerate(listbuttonlive):elem.state='normal'
+			self.mute()
+		self.safedisplay()
+
+	def safemode(self):
+		global safemode
+		if safemode==0:safemode=1
+		else:safemode=0
+		self.safedisplay()
+
+	def safedisplay(self):
+		if safemode==1:self.b1234.pos= 496,419
+		else:self.b1234.pos= 496,919
+
+
+	def leaving(self):
+		Clock.unschedule(self.listening)
+		print("unschedule livemode")
+
+
+	def menu(self):
+		if self.b007.state=="down":
+			self.b008.pos= 648,900
+			self.b009.pos= 648,360
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b013.pos= 344,900		
+			self.b006.state="normal"
+			self.b005.state="normal"
+			self.b010.pos= 0,0
+			self.b0141.pos= 496,900
+			self.b0142.pos= 344,900
+			self.b013.pos= 496,900
+		else:
+			self.b008.pos= 648,900
+			self.b009.pos= 648,900
+			self.b010.pos= 1000,0
+
+
+	def seqmode(self):
+		if self.b006.state=="down":
+			self.b008.pos= 496,360
+			self.b009.pos= 648,900
+			self.b013.pos= 344,900		
+			self.b007.state="normal"
+			self.b005.state="normal"
+			self.b010.pos= 0,0
+			self.b0140.pos= 344,900	
+			self.b0141.pos= 496,301
+			self.b0142.pos= 344,900
+			self.b013.pos= 496,900
+		else:
+			self.b008.pos= 496,900
+			self.b011.pos= 496,900
+			self.b012.pos= 496,900
+			self.b010.pos= 1000,0
+			self.b014.pos= 496,900
+			self.b015.pos= 496,900
+			self.b0141.pos= 496,900
+
+
+	def tools(self):
+		if self.b005.state=="down":
+			self.b0142.pos= 344,301
+			self.b0141.pos= 496,900
+			self.b0140.pos= 344,360	
+			self.b013.pos=	344,242
 			self.b011.pos= 496,900
 			self.b012.pos= 496,900
 			self.b014.pos= 496,900
@@ -4542,58 +5646,35 @@ class EuclideanScreen(Screen):
 			self.b006.state="normal"
 			self.b010.pos= 0,0
 		else:
-			self.b013.pos= 344,900			
+			self.b0142.pos= 344,900
+			self.b0140.pos= 344,900	
+			self.b013.pos= 496,900		
 			self.b010.pos= 1000,0	
 
 
 	def mode(self,num):
-		global lfobutmode
-		if num==1:
-			if lfobutmode==1:
-				lfobutmode=0
-				self.b020.state='normal'
-			else:
-				lfobutmode=1
-				self.b020.state='down'
-				w2.value=0
+		global livebutmode
 		if num==2:
-			if lfobutmode==2:
-				lfobutmode=0
+			if livebutmode==2:
+				livebutmode=0
 				self.b003.state='normal'
 			else:
-				lfobutmode=2
+				livebutmode=2
 				self.b003.state='down'
 				w2.value=0
 		if num==3:
-			if lfobutmode==3:
-				lfobutmode=0
+			if livebutmode==3:
+				livebutmode=0
 				self.b004.state='normal'
 			else:
-				lfobutmode=3
+				livebutmode=3
 				self.b004.state='down'
 				w2.value=0
-		if num==4:
-			if lfobutmode==4:
-				lfobutmode=0
-				self.b025.state='normal'
-			else:
-				lfobutmode=4
-				self.b025.state='down'
-				w2.value=0
-		if num==5:
-			if lfobutmode==5:
-				lfobutmode=0
-				self.b024.state='normal'
-			else:
-				lfobutmode=5
-				self.b024.state='down'
-				w2.value=0				
-		if num==6:
-			lfobutmode=6
+		if num==0:
+			livebutmode=0
 			self.b003.state='normal'
 			self.b004.state='normal'
-			self.b020.state='normal'
-		print(("buton mode",lfobutmode))
+		print("livebutmode mode",livebutmode)
 
 
 
@@ -4630,33 +5711,16 @@ class EuclideanScreen(Screen):
 
 	def listening(self,*args):
 		global wheel
-		global lfobutmode
+		global livebutmode
 		global loopsize
 		global BPM
+		global loopsizeS
 		encodervalue=w1.value
 		encoderpushed=w2.value
 		w1.value=0
 		step=v2.value
-		if lfobutmode==0: pass
-		if lfobutmode==1:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.rgt()
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.lft()
-			if encoderpushed==1:
-				lfobutmode=0
-				self.b023.state='normal'
-				self.closemenus()
-
-		if lfobutmode==2:
+		if livebutmode==0: pass
+		if livebutmode==2:
 			if encodervalue>0:
 				wheel+=1
 				if wheel==2:
@@ -4674,47 +5738,32 @@ class EuclideanScreen(Screen):
 						self.b003.text=str(BPM)
 						v4.value=BPM
 			if encoderpushed==1:
-				lfobutmode=0
+				livebutmode=0
 				self.b003.state='normal'
 
-		if lfobutmode==3:
+		if livebutmode==3:
 			if encodervalue>0:
 				wheel+=1
 				if wheel==2:
 					wheel=0
-					if loopsize[trackselected-1]<16*16:
-						loopsize[trackselected-1]+=16
-						q2.put(loopsize)	
-						self.LoopSdisplay()				
+					if loopsizeS<32*64:
+						loopsizeS+=64
+						v3.value=loopsizeS
+						self.mute()
+						self.b004.text=str(loopsizeS/64)
 			elif encodervalue<0:
 				wheel+=1
 				if wheel==2:
 					wheel=0
-					if loopsize[trackselected-1]>16:
-						loopsize[trackselected-1]-=16
-						q2.put(loopsize)
-						self.LoopSdisplay()
+					if loopsizeS>64:
+						loopsizeS-=64
+						v3.value=loopsizeS
+						self.mute()
+						self.b004.text=str(loopsizeS/64)
 			if encoderpushed==1:
-				lfobutmode=0
+				livebutmode=0
 				self.b004.state='normal'
 
-		if lfobutmode==4:
-			if encodervalue>0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.Phase(20)
-			elif encodervalue<0:
-				self.closemenus()
-				wheel+=1
-				if wheel==2:
-					wheel=0
-					self.Phase(-20)
-			if encoderpushed==1:
-				lfobutmode=0
-				self.b025.state='normal'
-				self.closemenus()
 		global playing
 		if v6.value==1:
 			v6.value=2
@@ -4727,7 +5776,127 @@ class EuclideanScreen(Screen):
 			playing=0
 			v6.value=2
 
+	def displayinfo(self):
+		global displayinfolive
+		if displayinfolive==0:
+			displayinfolive=1
+			self.b0140.text="INFOS: ON"
+		else:
+			displayinfolive=0
+			self.b0140.text="INFOS: OFF"
+		self.infos()
 
+
+	def infos(self):
+		listinfo=[self.lbl16,self.lbl15,self.lbl14,self.lbl13,self.lbl12,self.lbl11,self.lbl10,self.lbl9,self.lbl8,self.lbl7,self.lbl6,self.lbl5,self.lbl4,self.lbl3,self.lbl2,self.lbl1]
+		if displayinfolive==1:
+			self.lbl16.pos=55,288
+			self.lbl15.pos=255,288
+			self.lbl14.pos=455,288
+			self.lbl13.pos=655,288
+			self.lbl12.pos=55,183
+			self.lbl11.pos=255,183
+			self.lbl10.pos=455,183
+			self.lbl9.pos=655,183
+			self.lbl8.pos=55,78
+			self.lbl7.pos=255,78
+			self.lbl6.pos=455,78
+			self.lbl5.pos=655,78
+			self.lbl4.pos=55,-27
+			self.lbl3.pos=255,-27
+			self.lbl2.pos=455,-27
+			self.lbl1.pos=655,-27
+			for n,elem in enumerate(listinfo):
+				if trackmode[n]==1: 
+					elem.text="SEQUENCE"
+				elif trackmode[n]==2: 
+					elem.text="LFO"
+				elif trackmode[n+rangeYs]==3: 
+					for i,value in enumerate(ADSRtrig):
+						if value==n+rangeYs+1:
+							elem.text="ADSR (TRIG: " + str(i+1) +")"
+							break
+						else:
+							elem.text="ADSR (NO TRIG)"
+				elif trackmode[n]==4: 
+					elem.text="RANDOM"
+				elif trackmode[n]==5: 
+					elem.text="EUCLIDEAN"
+		else:
+			for n,elem in enumerate(listinfo):
+				elem.pos[0]=1000
+
+
+	def displayedit(self):
+		global displayeditlive
+		if displayeditlive==0:
+			displayeditlive=1
+			self.b0142.text="EDIT: ON"
+		else:
+			displayeditlive=0
+			self.b0142.text="EDIT: OFF"
+		self.edit()
+
+	def edit(self):
+		listedit=[self.e01,self.e02,self.e03,self.e04,self.e05,self.e06,self.e07,self.e08,self.e09,self.e010,self.e011,self.e012,self.e013,self.e014,self.e015,self.e016]
+		if displayeditlive==1:
+			self.e01.pos=2,373
+			self.e02.pos=201,373
+			self.e03.pos=401,373
+			self.e04.pos=601,373
+			self.e05.pos=2,269
+			self.e06.pos=201,269
+			self.e07.pos=401,269
+			self.e08.pos=601,269
+			self.e09.pos=2,164
+			self.e010.pos=201,164
+			self.e011.pos=401,164
+			self.e012.pos=601,164
+			self.e013.pos=2,59
+			self.e014.pos=201,59
+			self.e015.pos=401,59
+			self.e016.pos=601,59
+		else:
+			for n,elem in enumerate(listedit):
+				elem.pos[0]=1000
+
+	def mute(self,*args):
+		global song
+		for i in range(64):song[i]=[]
+		print(song)
+		for i,elem in enumerate(listbuttonlive):
+			self.mutechannel(i+1,elem.state)
+			#print("elem",elem.state)
+		print(song)	
+		q3.put(song)
+
+	def mutechannel(self,channel,status):
+		global song
+		if status=='normal':
+			print(channel, "muted")
+		else:
+			print(channel, 'playing')
+			for i in range(loopsizeS/64):
+				song[i].append(channel)
+
+
+	def changescreen(self, channel):
+		global trackselected
+		trackselected=channel
+		print('trackselected',trackselected)
+		r2.put(trackselected)
+		s2.put(trackselected)		
+		v5.value=trackselected
+		if trackmode[channel-1]==1: 
+			self.manager.current = 'piano_roll'
+		elif trackmode[channel-1]==2: 
+			self.manager.current = 'LFOScreen'
+		elif trackmode[channel-1]==3: 
+			self.manager.current = 'ADSRScreen'
+		elif trackmode[channel-1]==4: 
+			self.manager.current = 'RandomScreen'
+		elif trackmode[channel-1]==5: 
+			self.manager.current = 'EuclideanScreen'
 
 
 
@@ -4748,12 +5917,13 @@ class EuclideanScreen(Screen):
 class Timing():
 
 
-	def Timer(self,v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12):
+	def Timer(self,v1,v2,v3,v4,v5,v6,v7,v8,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12):
 		nextcall=time.time()
 		count=0
 		MIDIstoped=0
 		paused=0
 		portopened=0
+		dininreset=0
 		while 1:
 			BPM=v4.value
 			interval=float(60/Decimal(BPM)/Decimal(16))
@@ -4828,11 +5998,38 @@ class Timing():
 					count=1
 				nextcall = nextcall+interval
 				self.send2(count,sequencepool3,loopsize,song,Sendinfo,port,Syncinfo,ADSRtrig,EnvPool3,ADSRPool3)
-				#print((nextcall-time.time()))
-				if nextcall-time.time()>0:
-					time.sleep(nextcall-time.time())
+				
+				if y1.value!=0:
+					while v7.value < 1 and y1.value!=0:
+						if v8.value==0 and dininreset==0:
+							count=0
+							dininreset=1
+							v8.value=1
+							print('here')
+						else:dininreset=0
+						#pass
+					v7.value-=1
+
 				else:
-					nextcall=time.time()
+					#print("available time",(nextcall-time.time()))
+					if nextcall-time.time()>0:
+						if nextcall-time.time()>interval/2+0.004:
+							#print("waiting:",nextcall-time.time()-interval/2)
+							time.sleep(nextcall-time.time()-interval/2)
+							self.midlfo(count,EnvPool3,loopsize,song,Sendinfo)
+							self.midadsr(count,ADSRPool3,loopsize,song,Sendinfo)
+							self.midsendCV()
+							#print("sleeping",(nextcall-time.time()))
+							#time.sleep(nextcall-time.time())
+						if nextcall-time.time()>0: time.sleep(nextcall-time.time())
+						else: nextcall=time.time()
+					else:
+						nextcall=time.time()
+
+
+
+
+
 			elif v1.value==2:
 				paused=1
 				if MIDIstoped==0:
@@ -4865,6 +6062,7 @@ class Timing():
 	def send2(self,count,sequencepool3,loopsize,song,Sendinfo,port,Syncinfo,ADSRtrig,EnvPool3,ADSRPool3):
 		for n,track in enumerate(sequencepool3): #n is track number
 			pos=count%loopsize[n]-1
+			if pos==-1: pos=loopsize[n]-1
 			if pos==0:
 				if n+1 in song[int(count/(16*4))-1]:
 					#print(("All Notes Off on track: ",n+1))
@@ -4875,6 +6073,7 @@ class Timing():
 					if Sendinfo[n][6]==1: self.noteoffUSB(n,Sendinfo,port)
 					if Sendinfo[n][6]==2: self.noteoffMIDI(n,Sendinfo)
 			if n+1 in song[int(count/(16*4))]:
+				#print(pos)
 				if EnvPool3[n][pos]!=[]:
 					#print(n,EnvPool3[n][pos])
 					if Sendinfo[n][9]>0:self.CVsendLFO(n,EnvPool3[n][pos],Sendinfo)
@@ -4905,6 +6104,63 @@ class Timing():
 		else:
 			self.MIDImessage(248,Syncinfo)
 			self.USBmessage("clock",Syncinfo,port)
+
+	def midlfo(self,count,EnvPool3,loopsize,song,Sendinfo):
+		for n,lfo in enumerate(EnvPool3):
+			if n+1 in song[int(count/(16*4))]:
+				pos=count%loopsize[n]-1
+				if EnvPool3[n][pos]!=[] and EnvPool3[n][pos+1]!=[]:
+					#print(n,EnvPool3[n][pos])
+					#if Sendinfo[n][9]>0:self.CVsendLFO(n,EnvPool3[n][pos],Sendinfo)
+					if Sendinfo[n][9]>0:
+						elem=(EnvPool3[n][pos]+EnvPool3[n][pos+1])/2
+						#print("sending LFO:", "loopsize:" , loopsize[n],"pos",pos,"value",elem)
+						if elem!=[]:
+							a,b=divmod(4096*(elem+5.00)/15,256)
+							#print(('CV LFO',Sendinfo[n][9],Sendinfo[n][10], 'Value',elem))
+							CVsends2.append([Sendinfo[n][9],Sendinfo[n][10],[int(a), int(b)],Sendinfo[n][11]])
+
+	def midadsr(self,count,ADSRPool3,loopsize,song,Sendinfo):
+		for n,adsr in enumerate(EnvPool3):
+			if ADSRcounter[n]>0:
+				if Sendinfo[n][12]>0:
+					if 2<ADSRcounter[n]<loopsize[n]+1: 
+						#elem=(ADSRPool3[n][ADSRcounter[n]-2]+ADSRPool3[n][ADSRcounter[n]-1])/4.0
+						elem=(ADSRPool3[n][ADSRcounter[n]-2]+ADSRPool3[n][ADSRcounter[n]-1])/2.0
+						#print("adsr",elem)
+						if elem!=[] and elem!=0:
+							a,b=divmod(4096*(elem+5.00)/15,256)		
+							CVsends2.append([Sendinfo[n][12],Sendinfo[n][13],[int(a), int(b)],Sendinfo[n][14]])
+							#print("elem added")
+
+	def midsendCV(self):
+		global CVsends2
+		CVsends2=sorted(CVsends2, key = lambda x: x[3])
+		dacregister2=[[],[],[]]
+		for elem in CVsends2:
+			if elem[0]==0x61: dacregister2[0].append([elem[0],elem[1],elem[2]])
+			if elem[0]==0x62: dacregister2[1].append([elem[0],elem[1],elem[2]])
+			if elem[0]==0x60: dacregister2[2].append([elem[0],elem[1],elem[2]])									
+		#print("dacregisteres",dacregister2)
+		#print("Sendinfo",Sendinfo)
+		CVsends2=[]
+		try:
+			for dac in dacregister2:
+				if len(dac)==1:
+					if rpi==1:bus.write_i2c_block_data(dac[0][0], dac[0][1], dac[0][2])
+					#print(dac[0][0], dac[0][1], dac[0][2])
+				if len(dac)==2:
+					if rpi==1:bus.write_i2c_block_data(dac[0][0], dac[0][1], [dac[0][2][0],dac[0][2][1],dac[1][1], dac[1][2][0],dac[1][2][1]])
+					#print(dac[0][0], dac[0][1], [dac[0][2][0],dac[0][2][1],dac[1][1], dac[1][2][0],dac[1][2][1]])
+				if len(dac)==3:
+					if rpi==1:bus.write_i2c_block_data(dac[0][0], dac[0][1], [dac[0][2][0],dac[0][2][1],dac[1][1], dac[1][2][0],dac[1][2][1],dac[2][1], dac[2][2][0],dac[2][2][1]])
+					#print(dac[0][0], dac[0][1], [dac[0][2][0],dac[0][2][1],dac[1][1], dac[1][2][0],dac[1][2][1],dac[2][1], dac[2][2][0],dac[2][2][1]])
+				if len(dac)==4:
+					if rpi==1:bus.write_i2c_block_data(dac[0][0], dac[0][1], [dac[0][2][0],dac[0][2][1],dac[1][1], dac[1][2][0],dac[1][2][1],dac[2][1], dac[2][2][0],dac[2][2][1],dac[3][1], dac[3][2][0],dac[3][2][1]])
+					#print(dac[0][0], dac[0][1], [dac[0][2][0],dac[0][2][1],dac[1][1], dac[1][2][0],dac[1][2][1],dac[2][1], dac[2][2][0],dac[2][2][1],dac[3][1], dac[3][2][0],dac[3][2][1]])
+		except: print("error dac registers")
+
+
 
 
 	def sendCV(self):
@@ -4957,20 +6213,21 @@ class Timing():
 			#print(('CV LFO',Sendinfo[n][9],Sendinfo[n][10], 'Value',elem))
 			CVsends.append([Sendinfo[n][9],Sendinfo[n][10],[int(a), int(b)],Sendinfo[n][11]])
 			
-	def CVlaunchADSR(self,n):
+	def CVlaunchADSR(self,trigering):
 		global ADSRcounter
-		ADSRcounter[n-1]=1
-		#print("reseting counter ADSR")
+		ADSRcounter[trigering-1]=1
+		#print("launch counter ADSR",trigering)
 		#print(ADSRcounter)
 
 	def CVsendADSR(self,n,ADSRPool3,Sendinfo,loopsize):
 		global ADSRcounter
 		if ADSRcounter[n]<loopsize[n]+1:ADSRcounter[n]+=1
-		else:ADSRcounter[n]=0
-		#print(ADSRcounter)
-		#print(ADSRPool3[n][ADSRcounter[n]-2])
-		elem=ADSRPool3[n][ADSRcounter[n]-2]/2.0
-		#print(elem)
+		else:ADSRcounter[n]=2
+		#print("adsr counter",ADSRcounter)
+		#print("ADSR",ADSRPool3[n][ADSRcounter[n]-2]/2.0)
+		#elem=ADSRPool3[n][ADSRcounter[n]-2]/2.0
+		elem=ADSRPool3[n][ADSRcounter[n]-2]
+		#print("ADSR",elem)
 		if elem!=[]:
 			a,b=divmod(4096*(elem+5.00)/15,256)		
 			CVsends.append([Sendinfo[n][12],Sendinfo[n][13],[int(a), int(b)],Sendinfo[n][14]])
@@ -5149,15 +6406,21 @@ class Listen():
 
 
 
+
+
+
+
 class Listen2():
 
 
-	def starting(self,r1,r2,r3,r4,x1):
+	def starting(self,r1,r2,r3,r4,x1,y1):
 		global midibyte
 		global messagemidi
+		global Syncmessage
 		midibyte=0
+		Syncmessage=0
 		messagemidi = [0, 0, 0]
-		print("listen2")	
+		#print("listen2")	
 		while 1:
 			while r1.empty() is False:
 				Sendinfo=r1.get()
@@ -5180,9 +6443,9 @@ class Listen2():
 			while midibyte < 3:
 				data = ord(ser.read(1)) # read a byte
 				#print(data)
-				if data==250 or data==251 or data==252:
+				if data==250 or data==251 or data==252 or data==248:
 				#	self.DINsyncout(data,Syncinfo)
-					if x1.value==1:self.DINsyncin(data)
+					if x1.value==1 or y1.value==2:self.DINsyncin(data)
 				if data >> 7 != 0:
 					midibyte = 0      # status byte!   this is the beginning of a midi message!
 				messagemidi[midibyte] = data
@@ -5194,30 +6457,49 @@ class Listen2():
 			velocity = messagemidi[2] if len(messagemidi) > 2 else None
 			if messagetype==8 or messagetype==9 or messagetype==11:
 				#self.ThroughDin([messagetype,note,velocity],Sendinfo,trackselected)
-				self.ThroughCV([messagetype,note,velocity],Sendinfo,trackselected)
+				if x1.value==1:self.ThroughCV([messagetype,note,velocity],Sendinfo,trackselected)
 			if messagetype==9:
-				self.DinINRec(note)
+				if x1.value==1:self.DinINRec(note)
 
 	def DinINRec(self,note):
 		#print(note)
 		r4.put(note)
 
 	def DINsyncin(self,message):
-		print("DINSYNCIN message!!",x1.value)
+		global Syncmessage
+		#print("DINSYNCIN message!!",x1.value)
 		if v6.value==0 or 1:
 			v6.value=2
-		if message==250:
-			#print("PLAY")
+		if message==250 and y1.value==2:
+			print("PLAY")
+			v2.value=0
 			v1.value=1
-			v6.value=1
-		if message==251:
+			v8.value=0
+			Syncmessage=0
+			
+		if message==251 and y1.value==2:
 			#print("CONTINUE")
 			v1.value=1
 			v6.value=1
-		if message==252:
 			#print("STOP")
-			v1.value=0
-			v6.value=0
+			#v1.value=0
+			#v6.value=0
+		# if message==252:
+		# 	#print("STOP")
+		# 	#pass
+		# 	if y1.value==0:
+		# 		v1.value=0
+		# 		v6.value=0
+		if message==248 and v1.value==1:
+			if y1.value==2:
+				Syncmessage+=1
+				if Syncmessage==1:
+					v7.value+=1
+				if Syncmessage==3:
+					v7.value+=1
+					Syncmessage=0
+			else:
+				Syncmessage=0
 
 
 	def DINsyncout(self,message,Syncinfo):
@@ -5232,15 +6514,15 @@ class Listen2():
 
 	def ThroughDin(self,Message,Sendinfo,trackselected):
 		if Message[0]==9:
-			print("send" , Message)
+			#print("send" , Message)
 			byte1=bin(int(128+16+Sendinfo[trackselected-1][0]-1))
 			byte3=bin(100)
 		if Message[0]==8:
-			print("stop" , Message)
+			#print("stop" , Message)
 			byte1=bin(int(128+Sendinfo[trackselected-1][0]-1))
 			byte3=bin(0)
 		if Message[0]==11:
-			print("stop all notes" , Message)
+			#print("stop all notes" , Message)
 			byte1=bin(int(176+Sendinfo[trackselected-1][0]-1))
 			byte3=bin(0)
 		byte2 = bin(int(Message[1]))
@@ -5284,7 +6566,11 @@ class Listen3():
 
 	def starting(self,s1,s2,s3,s4):
 		portopened=0
-		if rpi==1: midi_in = rtmidi.MidiIn()
+		if rpi==1: 
+			midi_in = rtmidi.MidiIn()
+			midi_in.ignore_types(timing=False)
+		global Syncmessage
+		Syncmessage=0
 
 		while 1:
 			while s1.empty() is False:
@@ -5299,9 +6585,14 @@ class Listen3():
 			if rpi==1 and Syncinfo[4]==1:
 				available_ports = midiout.get_ports()
 				if len(available_ports)==2 and portopened==0:
+					#midi_in = rtmidi.MidiIn(rtapi=3)
 					midi_in = rtmidi.MidiIn()
+					midi_in.ignore_types(timing=False)
 					midi_in.open_port(1)
+
 					portopened=1
+					#r=rtmidi.get_compiled_api()
+					#print("api",r)
 				elif len(available_ports)==2 and portopened==1:
 					midi_in.close_port()
 					portopened=0
@@ -5317,32 +6608,61 @@ class Listen3():
 
 	def MIDIusbIn(self,Sendinfo,trackselected,midi_in,Syncinfo):
 		if rpi==1:
+			#midi_in.ignore_types(timing=False)
 			#try:
 			message= midi_in.get_message()
 			if message:
-				print(message)
+				#print(message)
 				self.ThroughCV(message[0],Sendinfo,trackselected)
 				self.USBrec(message[0])
 				#print(message)
 				self.USBsyncin(message[0])
+				# q=midi_in.get_current_api()
+				# if q == rtmidi.API_UNIX_JACK:
+				# 	print("Using JACK API for MIDI input.")
+
 				#self.USBsync(message[0],Syncinfo) #pour plus tard
 			#except: print("midi_in unknown")
 
 	def USBsyncin(self,message):
+		global Syncmessage
+		#print("DINSYNCIN message!!",x1.value)
 		if v6.value==0 or 1:
 			v6.value=2
-		if message[0]==250:
-			#print("PLAY")
-			v1.value=1
-			v6.value=1
-		if message[0]==251:
-			#print("CONTINUE")
-			v1.value=1
-			v6.value=1
+		# if message[0]==250:
+		# 	#print("PLAY")
+		# 	v2.value=0
+		# 	v1.value=1
+		# 	v8.value=0
+		# 	Syncmessage=0
+			
+		# if message[0]==251:
+		# 	#print("CONTINUE")
+		# 	v1.value=1
+		# 	v6.value=1
+		# 	#print("STOP")
+		# 	#v1.value=0
+		# 	#v6.value=0
 		if message[0]==252:
 			#print("STOP")
+			#pass
 			v1.value=0
 			v6.value=0
+		if 	message[0]==248 and v1.value==0:	
+			v2.value=0
+			v1.value=1
+			v8.value=0
+			Syncmessage=0
+		if message[0]==248 and v1.value==1:
+			if y1.value==1:
+				Syncmessage+=1
+				if Syncmessage==1:
+					v7.value+=1
+				if Syncmessage==3:
+					v7.value+=1
+					Syncmessage=0
+			else:
+				Syncmessage=0
 
 
 	def USBrec(self,message):
@@ -5404,8 +6724,13 @@ class Listen3():
 
 
 class Manager(ScreenManager):
-
-	pass
+	screen_one= ObjectProperty(None)
+	screen_two= ObjectProperty(None)
+	screen_three= ObjectProperty(None)
+	screen_four= ObjectProperty(None)
+	screen_five= ObjectProperty(None)
+	screen_six= ObjectProperty(None)
+	screen_seven= ObjectProperty(None)
 
 class SequencerApp(App):
 
@@ -5414,6 +6739,25 @@ class SequencerApp(App):
 		Config.write()
 		sm = Manager(transition=NoTransition())
 		return sm
+
+	def __init__(self, **kwargs):
+		super(SequencerApp, self).__init__(**kwargs)
+		self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+		self._keyboard.bind(on_key_down=self._on_keyboard_down)
+
+	def _keyboard_closed(self):
+		self._keyboard.unbind(on_key_down=self._on_keyboard_down)
+		self._keyboard = None
+
+
+	def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+		#print("keyboard, ",keycode)
+		if keycode[0]==276:w1.value-=1
+		elif keycode[0]==275:w1.value+=1
+		elif keycode[0]==13:
+			if w2.value==1: w2.value=0
+			else: w2.value=1
+		return True
 
 ##############################################################################################
 ##############################################################################################
@@ -5571,7 +6915,8 @@ ADSRPool3=[[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
 [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],
 [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]]
 
-
+EucliPool2=[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]
 
 EnvPool0=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
 #print(sequencepool3)
@@ -5612,21 +6957,39 @@ trackselectedparam=1
 BPM=120
 interval=float(60/Decimal(BPM)/Decimal(16))
 count=0
-seqbuttonmode=0
-seqbuttonmodesong=0
 recordingON=0
 DACpool=[0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]
 CVsends=[]
+CVsends2=[]
 CVdelayed=[]
 stoplong=0
 trackmode=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 Phase=[55,55,55,55,55,55,55,55,55,55,55,55,55,55,55,55]
 ADSRtrig=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]  #track i triggers ADSR from track x
 ADSRcounter=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-displayinfo=0
+displayinfo=1
+stepeucli=[7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7]
+pulseeucli=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+ChangedEucli=0
+EucliOffset=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+manuelmodeeucli=0
+RandomDensity=[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20]
+RandomTemp=[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20]
+RandomRatchet=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+randomcalculated=0
+resetedrandom=0
+Ratchetcount=0
+displayinfolive=1
+displayeditlive=0
+polaritylfo=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+DrawPoints=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+projectmode=0
+safemode=0
+dininreset=0
 
 # size of the loops of each tracks
 loopsize=numpy.full(100,64)
+
 loopsize=loopsize.tolist()
 playing=0
 
@@ -5636,11 +6999,13 @@ if rpi==1:
 	with open('/home/pi/Desktop2/UIP/param.json') as f: paramcf1 = json.load(f)
 	with open('/home/pi/Desktop2/UIP/savedseq.json') as s: saved = json.load(s)
 	with open('/home/pi/Desktop2/UIP/savedsong.json') as s2: savedsong = json.load(s2)
+	with open('/home/pi/Desktop2/UIP/savedsong2.json') as s3: savedsong2 = json.load(s3)
 	with open("/home/pi/Desktop2/UIP/licence.json") as l: licence=json.load(l)
 else:
 	with open('param.json') as f: paramcf1 = json.load(f)
 	with open('savedseq.json') as s: saved = json.load(s)
 	with open('savedsong.json') as s2: savedsong = json.load(s2)
+	with open('savedsong2.json') as s3: savedsong2 = json.load(s3)
 	with open("licence.json") as l: licence=json.load(l)
 version=licence["licence"][0]["version"]
 print("CFM1 Version: " + str(version))
@@ -5656,9 +7021,9 @@ Syncinfo=paramcalc.convertsync()
 midiout = rtmidi.MidiOut()
 #midiout = 0
 
-def outsmp(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12):
+def outsmp(v1,v2,v3,v4,v5,v6,v7,v8,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12):
 	ti=Timing()
-	ti.Timer(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12)
+	ti.Timer(v1,v2,v3,v4,v5,v6,v7,v8,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12)
 
 #v1: playing ; v2: count ; v3: song size ; v4: BPM
 #q1:sequencepool ; q2: loopsize ; q3: song ; q4: Sendinfo
@@ -5674,6 +7039,10 @@ v5=multiprocessing.Value('i',1)
 v5.value=trackselected
 v6=multiprocessing.Value('i',1)
 v6.value=2
+v7=multiprocessing.Value('i',1)
+v7.value=0
+v8=multiprocessing.Value('i',1)
+v8.value=1
 
 q1=multiprocessing.Queue()
 q1.put(sequencepool2)
@@ -5710,9 +7079,9 @@ w2=multiprocessing.Value('i',1)
 w2.value=0
 
 
-def insmp2(r1,r2,r3,r4,x1):
+def insmp2(r1,r2,r3,r4,x1,y1):
 	listen2=Listen2()
-	listen2.starting(r1,r2,r3,r4,x1)
+	listen2.starting(r1,r2,r3,r4,x1,y1)
 
 r1=multiprocessing.Queue()
 r1.put(Sendinfo)
@@ -5723,6 +7092,8 @@ r3.put(Syncinfo)
 r4=multiprocessing.Queue()
 x1=multiprocessing.Value('i',1)
 x1.value=0
+y1=multiprocessing.Value('i',1)
+y1.value=0
 
 def insmp3(s1,s2,s3,s4):
 	listen3=Listen3()
@@ -5736,14 +7107,79 @@ s3=multiprocessing.Queue()
 s3.put(Syncinfo)
 s4=multiprocessing.Queue()
 
-p=multiprocessing.Process(target=outsmp,args=(v1,v2,v3,v4,v5,v6,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12))
+p=multiprocessing.Process(target=outsmp,args=(v1,v2,v3,v4,v5,v6,v7,v8,q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12))
 p.start()
 pq=multiprocessing.Process(target=insmp,args=(w1,w2))
 pq.start()
-pq2=multiprocessing.Process(target=insmp2,args=(r1,r2,r3,r4,x1))
+pq2=multiprocessing.Process(target=insmp2,args=(r1,r2,r3,r4,x1,y1))
 pq2.start()
 pq3=multiprocessing.Process(target=insmp3,args=(s1,s2,s3,s4))
 pq3.start()
+
+
+
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+
+
+def deleteLFO():
+	global EnvPool2
+	global EnvPool3
+	global Phase
+	Phase[trackselected-1]=55
+	EnvPool2[trackselected-1]=[0]
+	EnvPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+	#print("deleted",EnvPool3[trackselected-1])
+	#print("EnvPool0",EnvPool0)
+	q7.put(EnvPool3[trackselected-1])
+	print("LFO deleted")
+
+def deleteADSR():
+	global ADSRPool2
+	global ADSRPool3
+	global ADSRtrig
+	ADSRPool2[trackselected-1]=[0]
+	ADSRPool3[trackselected-1]=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]
+	q8.put(ADSRPool3[trackselected-1])
+	for n,elem in enumerate(ADSRtrig):
+		if elem == trackselected:
+			ADSRtrig[n]=0
+	q9.put(ADSRtrig)
+	#print("adsr trig",ADSRtrig)
+	print("ADSR deleted")
+
+def clearsequence():
+	global sequencepool2
+	global sequencepool3
+	sequencepool2[trackselected-1]=[]
+	for i,elem in enumerate(sequencepool3[trackselected-1]): sequencepool3[trackselected-1][i]=[]
+	q1.put(sequencepool2)
+	q6.put(sequencepool3[trackselected-1])
+	#print(sequencepool3[trackselected-1])
+	print("Sequence deleted")
+	deleteEuclidean()
+
+def deleteRandom():
+	print("Random deleted")
+
+def deleteEuclidean():
+	global EucliPool2
+	EucliPool2[trackselected-1]=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	print("Euclidean deleted")
+
+
 
 try:
 	seq=SequencerApp()

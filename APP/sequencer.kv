@@ -96,6 +96,16 @@
         name: 'EuclideanScreen'
         manager: screen_manager
 
+    MixerScreen:
+        id:screen_height
+        name: 'MixerScreen'
+        manager: screen_manager
+
+    DRAWScreen:
+        id:screen_neine
+        name: 'DRAWScreen'
+        manager: screen_manager
+
 
 <LoadSeq>
     id: loadseq
@@ -1124,6 +1134,7 @@
     b100004:b100004
     b100005:b100005
     b100006:b100006
+    b100007:b100007
     b1000004:b1000004
     b1000005:b1000005
     b000000001:b000000001
@@ -1590,6 +1601,11 @@
                     text:'DIN In:'
                     font_size: 22
                     pos: 560,270 
+                Label:
+                    text:'SYNC In:'
+                    font_size: 22
+                    pos: 560,170 
+
                 CustButton:
                     id:b100006
                     pos: 670,290
@@ -1611,7 +1627,15 @@
                     size: 55, 55
                     background_color: .68,.68,.84,1
                     on_press:pmode.USBstate()
-                    on_press: b100005.state='normal'                      
+                    on_press: b100005.state='normal'  
+                CustButton:
+                    id:b100007
+                    pos: 670,190
+                    size: 55, 55
+                    text:'Off'
+                    background_color: .68,.68,.84,1
+                    on_press:pmode.SyncIn()
+                    on_press: b100007.state='normal'                      
 
         TabbedPanelItem:
             on_press:pmode.closemenu()
@@ -1702,7 +1726,8 @@
             size: 150, 60
             text: "CLOSE"
             id:b007
-            on_press:root.manager.current='song_mode'
+            #on_press:root.manager.current='song_mode'
+            on_press:pmode.projectmode()
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
@@ -1998,6 +2023,7 @@
     b001:b001
     b002:b002
     b003:b003
+    b0003:b0003
     b004:b004
     b005:b005
     b006:b006
@@ -2017,6 +2043,8 @@
     b022:b022
     b0222:b0222
     b0223:b0223
+    b0224:b0224
+    b0225:b0225
 
     b101: b101
     b100: b100
@@ -2823,9 +2851,17 @@
             on_press:smode.mode(2)   
             on_press:b004.state='normal'
             on_press:smode.closemenus()
-
             font_size: 27
             text: "120"
+        CustToggleButton:
+            pos: 185,419
+            size: 60, 60
+            id:b0003  
+            on_press:b0003.state='normal'
+            on_press:smode.closemenus()
+            font_size: 27
+            text: "EXT"
+
         CustToggleButton:
             pos: 247,419
             size: 95, 60
@@ -2846,7 +2882,8 @@
             size: 150, 60
             text: "SONG"
             id:b006
-            on_press: b006.state='normal'
+            #on_press: b006.state='normal'
+            on_press: smode.seqmode()
         CustToggleButton:
             pos: 648,419
             size: 150, 60
@@ -2903,12 +2940,14 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "MIXER %s"%(icon('icon-lock', 22))
+            text: "LIVE"
             id:b012
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
+            on_press:root.manager.current='MixerScreen'
             on_press: smode.closemenus()
+            on_press: smode.leaving()
 
         CustButton3:
             pos: 496,900
@@ -2937,7 +2976,7 @@
         CustButton3:
             pos: 496,900
             size: 150,60
-            text: "INFOS: OFF"
+            text: "INFOS: ON"
             id:b0140
             font_size: 25
             font_name:"Calibri"
@@ -3059,7 +3098,30 @@
             on_press:root.manager.current='ADSRScreen'
             on_press: smode.closemenus()
             on_press: smode.leaving()
-
+        CustButton3:
+            pos: 1301,1243
+            size: 198,60
+            text: "EDIT"
+            id:b0224
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:root.manager.transition.direction='right'
+            on_press:root.manager.current='RandomScreen'
+            on_press: smode.closemenus()
+            on_press: smode.leaving()
+        CustButton3:
+            pos: 1301,1243
+            size: 198,60
+            text: "EDIT"
+            id:b0225
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:root.manager.transition.direction='right'
+            on_press:root.manager.current='EuclideanScreen'
+            on_press: smode.closemenus()
+            on_press: smode.leaving()            
 
 
 
@@ -3141,6 +3203,7 @@
     b001:b001
     b002:b002
     b003:b003
+    b0003:b0003
     b004:b004
     b005:b005
     b006:b006
@@ -3162,7 +3225,7 @@
     b022:b022
     b023:b023
     b024:b024
-
+    b025:b025
     
     
 
@@ -3924,9 +3987,17 @@
             on_press:sequencer.mode(2)
             on_press:sequencer.closemenus()
         CustToggleButton:
+            pos: 1185,419
+            size: 60, 60
+            id:b0003  
+            on_press:b0003.state='normal'
+            on_press:sequencer.closemenus()
+            font_size: 27
+            text: "EXT"
+        CustToggleButton:
             pos: 247,419
             size: 95, 60
-            text: "4.0"
+            text: "4"
             id:b004
             font_size: 27
             on_press:b003.state='normal'
@@ -3942,7 +4013,7 @@
         CustToggleButton:
             pos: 496,419
             size: 150, 60
-            text: "SEQUENCE"
+            text: "1: SEQUENCE"
             id:b006
             on_press: sequencer.seqmode()
         CustToggleButton:
@@ -3969,7 +4040,8 @@
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press:root.manager.transition.direction='left'
-            on_press:root.manager.current='song_mode'
+            #on_press:root.manager.current='song_mode'
+            on_press:sequencer.projectmode()
             on_press: sequencer.clear()
             on_press: sequencer.closemenus()
             on_press: sequencer.leaving()
@@ -4016,26 +4088,39 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "RANDOM %s"%(icon('icon-lock', 22))
+            text: "RANDOM"
             id:b023
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press: sequencer.closemenus()
-            #on_press:root.manager.current='RandomScreen'
-            #on_press: sequencer.leaving()
+            on_press:root.manager.current='RandomScreen'
+            on_press: sequencer.leaving()
         CustButton3:
             markup: True
             pos: 344,900
             size: 150,60
-            text: "EUCLIDEAN %s"%(icon('icon-lock', 22))
+            text: "EUCLIDEAN"
             id:b024
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1 
             on_press: sequencer.closemenus()
-            #on_press:root.manager.current='EuclideanScreen'
-            #on_press: sequencer.leaving()             
+            on_press:root.manager.current='EuclideanScreen'
+            on_press: sequencer.leaving()             
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "DRAW %s"%(icon('icon-lock', 22))
+            id:b025
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1 
+            on_press: sequencer.closemenus()
+            #on_press:root.manager.current='DRAWScreen'
+            #on_press: sequencer.leaving()  
+
 
         CustButton3:
             pos: 496,900
@@ -4120,6 +4205,7 @@
     b001:b001
     b002:b002
     b003:b003
+    b0003:b0003
     b004:b004
     b005:b005
     b006:b006
@@ -4134,6 +4220,8 @@
     b015:b015
     b024:b024
     b025:b025
+    b026:b026
+    b027:b027
     l1:l1
     id:LFOScreen
     GridLayout:
@@ -4184,9 +4272,10 @@
                 Rectangle:
                     pos: (50,10)
                     size: 3,380 
-                Rectangle:
-                    pos: (20,200)
-                    size: 760,3 
+                Line:
+                    group:'h'
+                    points: [(20,200),(780,200)]
+                    width: 1.5 
                 Color:
                     rgba:(0, 0.7, 0, 1)
                 Line:
@@ -4294,9 +4383,17 @@
             on_press:LFOScreen.mode(2)
             on_press:LFOScreen.closemenus()
         CustToggleButton:
+            pos: 185,419
+            size: 60, 60
+            id:b0003  
+            on_press:b0003.state='normal'
+            on_press:LFOScreen.closemenus()
+            font_size: 27
+            text: "EXT"
+        CustToggleButton:
             pos: 247,419
             size: 95, 60
-            text: "4.0"
+            text: "4"
             id:b004
             font_size: 27
             on_press:b003.state='normal'
@@ -4340,7 +4437,8 @@
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press:root.manager.transition.direction='left'
-            on_press:root.manager.current='song_mode'
+            #on_press:root.manager.current='song_mode'
+            on_press:LFOScreen.projectmode()
             on_press: LFOScreen.closemenus()
             on_press: LFOScreen.leaving()
             
@@ -4367,7 +4465,6 @@
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
-            on_press: LFOScreen.delete()
             on_press: LFOScreen.closemenus()
             on_press:root.manager.current='piano_roll'
             on_press: LFOScreen.leaving()            
@@ -4389,28 +4486,40 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "RANDOM %s"%(icon('icon-lock', 22))
+            text: "RANDOM"
             id:b014
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press: LFOScreen.closemenus()
-            #on_press:root.manager.current='RandomScreen'
-            #on_press: LFOScreen.leaving() 
+            on_press:root.manager.current='RandomScreen'
+            on_press: LFOScreen.leaving() 
 
         CustButton3:
             markup: True
             pos: 344,900
             size: 150,60
-            text: "EUCLIDEAN %s"%(icon('icon-lock', 22))
+            text: "EUCLIDEAN"
             id:b015
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press: LFOScreen.closemenus()
-            #on_press:root.manager.current='EuclideanScreen'
-            #on_press: LFOScreen.leaving() 
-                    
+            on_press:root.manager.current='EuclideanScreen'
+            on_press: LFOScreen.leaving() 
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "DRAW %s"%(icon('icon-lock', 22))
+            id:b027
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: LFOScreen.closemenus()
+            #on_press:root.manager.current='DRAWScreen'
+            #on_press: LFOScreen.leaving()                    
 
         CustButton3:
             pos: 496,900
@@ -4423,14 +4532,19 @@
             on_press: LFOScreen.reset()
             on_press: LFOScreen.closemenus()
 
+        CustButton3:
+            markup: True
+            pos: 496,900
+            size: 150,60
+            text: "BIPOLAR %s"%(icon('icon-lock', 22))
+            id:b026
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            #on_press: LFOScreen.polarity()
+            on_press: LFOScreen.closemenus()
 
-
-
-
-
-
-
-<ADSRScreen>:
+<DRAWScreen>:
 
     b001:b001
     b002:b002
@@ -4446,12 +4560,448 @@
     b012:b012
     b013:b013
     b014:b014
+    b015:b015
+    b024:b024
+    b025:b025
+    b026:b026
+    b027:b027
+    b028:b028
+    b029:b029
+
+    
+
+    l1:l1
+    id:DRAWScreen
+    GridLayout:
+        canvas.before:
+           
+
+            Color:
+                rgba: (.37, .39, .45, 0.4)
+            Rectangle:
+                pos: self.pos
+                size: self.size
+            
+            
+        
+        Widget:
+            id:w_canvas
+            pos:225,10
+            canvas:
+
+                Color:
+                    rgba: (1, 1, 1, 0.4)
+                Rectangle:
+                    pos: self.pos
+                    size: 2,380 
+                Rectangle:
+                    pos: (self.pos[0]+175, self.pos[1])
+                    size: 2,380 
+                Rectangle:
+                    pos: (self.pos[0]+350, self.pos[1])
+                    size: 2,380 
+                Rectangle:
+                    pos: (self.pos[0]+525, self.pos[1])
+                    size: 2,380 
+                Rectangle:
+                    pos: (50,20 )
+                    size: 700,2 
+                Rectangle:
+                    pos: (50,380 )
+                    size: 700,2 
+                Rectangle:
+                    pos: (50,290 )
+                    size: 700,2 
+                Rectangle:
+                    pos: (50,110 )
+                    size: 700,2                     
+                Color:
+                    rgba:(1,1,1,1)
+                Rectangle:
+                    pos: (50,10)
+                    size: 3,380 
+                Rectangle:
+                    pos: (20,200)
+                    size: 760,3 
+                Color:
+                    rgba:(0, 0.7, 0, 1)
+                Line:
+                    group:'a'
+                    points:[(52,15),(400,385)]
+                    width:3
+                Line:
+                    group:'b'
+                    points:[(400,385),(748,15)]
+                    width:3
+                Line:
+                    group:'c'
+                    ellipse:(-9310,15,710,710,90,180)
+                    width:3
+                Line:
+                    group:'d'
+                    ellipse:(952,-325,710,710,270,360)
+                    width:3
+                Line:
+                    group:'e'
+                    ellipse:(9400,15,668,755,180,270)
+                    width:3
+                Line:
+                    group:'f'
+                    ellipse:(982,-370,668,755,0,90)
+                    width:3
+                Ellipse:
+                    group:'g'
+                    size:(20,20)
+                    pos:(300,300)
+                Ellipse:
+                    group:'h'
+                    size:(20,20)
+                    pos:(300,900)
+                Ellipse:
+                    group:'i'
+                    size:(20,20)
+                    pos:(300,900)
+                Ellipse:
+                    group:'j'
+                    size:(20,20)
+                    pos:(300,900)
+                Ellipse:
+                    group:'k'
+                    size:(20,20)
+                    pos:(300,900)
+                Ellipse:
+                    group:'l'
+                    size:(20,20)
+                    pos:(300,900)
+                Ellipse:
+                    group:'m'
+                    size:(20,20)
+                    pos:(300,900)
+                Ellipse:
+                    group:'n'
+                    size:(20,20)
+                    pos:(300,900)
+                Ellipse:
+                    group:'o'
+                    size:(20,20)
+                    pos:(300,900)
+                Line:
+                    group:'p'
+                    points:[(52,15),(400,385)]
+                    width:3
+                Line:
+                    group:'q'
+                    points:[(52,15),(400,385)]
+                    width:3
+                Line:
+                    group:'r'
+                    points:[(52,15),(400,385)]
+                    width:3
+                Line:
+                    group:'s'
+                    points:[(52,15),(400,385)]
+                    width:3
+                Line:
+                    group:'t'
+                    points:[(52,15),(400,385)]
+                    width:3
+                Line:
+                    group:'u'
+                    points:[(52,15),(400,385)]
+                    width:3
+                Line:
+                    group:'v'
+                    points:[(52,15),(400,385)]
+                    width:3
+                Line:
+                    group:'w'
+                    points:[(52,15),(400,385)]
+                    width:3
+
+        Label:
+            font_size:28
+            text:'0'
+            pos:-10,167
+        Label:
+            id:l1
+            font_size:28
+            text:'4'
+            pos:715,167
+
+
+        CustToggleButton:
+            id:b025
+            pos: 55,10
+            size: 14,380
+            background_color: .68,.68,.84,1
+            text:'0'
+            on_press: DRAWScreen.mode(4)     
+            on_press:  b024.state='normal'  
+            on_press:  b003.state='normal'        
+            on_press:  b004.state='normal'                                    
+        Label:
+            id:b024
+            font_size:24
+            pos: 1,370
+            size: 50, 30
+            text: "100"                            
+        CustToggleButton:
+            pos: 1700,30
+            size: 70, 40
+            text: "rgt"
+            on_press: DRAWScreen.test1()
+        CustToggleButton:
+            pos: 1700,80
+            size: 70, 40
+            text: "lft"            
+            on_press: DRAWScreen.test2() 
+        
+        CustButton3:
+            pos: 1000,1000
+            size: 15,415
+        CustButton3:
+            pos: 1000,1000
+            size: 15,415
+
+
+
+        CustToggleButton:
+            markup: True
+            pos: 1,419
+            size: 90, 60
+            text: "%s"%(icon('icon-play', 22))
+            id:b001
+            on_press: DRAWScreen.start()
+        CustButton3:
+            markup: True
+            pos: 93,419
+            size: 90, 60
+            text: "%s"%(icon('icon-stop', 22))
+            id:b002
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.stop()
+        CustToggleButton:
+            pos: 185,419
+            size: 60, 60
+            id:b003
+            text: "120"
+            font_size: 27
+            on_press:b004.state='normal'
+            on_press:  b024.state='normal'  
+            on_press:  b025.state='normal'                      
+            on_press:DRAWScreen.mode(2)
+            on_press:DRAWScreen.closemenus()
+        CustToggleButton:
+            pos: 247,419
+            size: 95, 60
+            text: "4"
+            id:b004
+            font_size: 27
+            on_press:b003.state='normal'
+            on_press:  b024.state='normal'  
+            on_press:  b025.state='normal'             
+            on_press:DRAWScreen.mode(3)
+            on_press:DRAWScreen.closemenus()
+        CustToggleButton:
+            pos: 344,419
+            size: 150, 60
+            text: "TOOLS"
+            id:b005
+            on_press: DRAWScreen.tools()
+        CustToggleButton:
+            pos: 496,419
+            size: 150, 60
+            text: "DRAW"
+            id:b006          
+            on_press: DRAWScreen.seqmode()
+        CustToggleButton:
+            pos: 648,419
+            size: 150, 60
+            text: "MENU"
+            id:b007
+            on_press: DRAWScreen.menu()
+
+        CustButton3:
+            id:b010
+            pos: 1000,0
+            size: 1000,419
+            background_color: 0,0,0,0
+            on_press: DRAWScreen.closemenus()
+
+
+        CustButton3:
+            pos: 648,900
+            size: 150,60
+            text: "SONG"
+            id:b008
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:root.manager.transition.direction='left'
+            #on_press:root.manager.current='song_mode'
+            on_press:DRAWScreen.projectmode()
+            on_press: DRAWScreen.closemenus()
+            on_press: DRAWScreen.leaving()
+            
+
+
+        CustButton3:
+            pos: 648,900
+            size: 150,60
+            text: "PARAM"
+            id:b009
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:root.manager.current='param_mode'
+            on_press: DRAWScreen.closemenus()
+            on_press: DRAWScreen.leaving()
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "SEQUENCE"
+            id:b011
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.delete()
+            on_press: DRAWScreen.closemenus()
+            on_press:root.manager.current='piano_roll'
+            on_press: DRAWScreen.leaving()    
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "LFO"
+            id:b027
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.closemenus()
+            on_press:root.manager.current='LFOScreen'
+            on_press: DRAWScreen.leaving()          
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "ADSR"
+            id:b012
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.closemenus()
+            on_press:root.manager.current='ADSRScreen'
+            on_press: DRAWScreen.leaving()     
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "RANDOM %s"%(icon('icon-lock', 22))
+            id:b014
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.closemenus()
+            on_press:root.manager.current='RandomScreen'
+            on_press: DRAWScreen.leaving() 
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "EUCLIDEAN %s"%(icon('icon-lock', 22))
+            id:b015
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.closemenus()
+            on_press:root.manager.current='EuclideanScreen'
+            on_press: DRAWScreen.leaving() 
+                    
+        CustButton3:
+            pos: 496,900
+            size: 150,60
+            text: "RESET"
+            id:b013
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.reset()
+            on_press: DRAWScreen.closemenus()
+
+        CustButton3:
+            pos: 496,900
+            size: 150,60
+            text: "BIPOLAR"
+            id:b026
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.polarity()
+            on_press: DRAWScreen.closemenus()
+
+        CustButton3:
+            pos: 496,900
+            size: 75,60
+            text: "ADD"
+            id:b028
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.addpoint()
+            on_press: DRAWScreen.closemenus()
+
+        CustButton3:
+            pos: 496,900
+            size: 75,60
+            text: "REM"
+            id:b029
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: DRAWScreen.rempoint()
+            on_press: DRAWScreen.closemenus()
+
+
+
+
+
+
+
+
+
+
+
+
+<ADSRScreen>:
+
+    b001:b001
+    b002:b002
+    b003:b003
+    b0003:b0003
+    b004:b004
+    b005:b005
+    b006:b006
+    b007:b007
+    b008:b008
+    b009:b009
+    b010:b010
+    b011:b011
+    b012:b012
+    b013:b013
+    b014:b014
     b016:b016
     b017:b017
     b018:b018
     b019:b019
-
-    b019:b019
+    b023:b023
     b020:b020
     b021:b021
     b022:b022
@@ -4634,9 +5184,17 @@
             on_press:ADSRScreen.mode(2)
             on_press:ADSRScreen.closemenus()
         CustToggleButton:
+            pos: 185,419
+            size: 60, 60
+            id:b0003  
+            on_press:b0003.state='normal'
+            on_press:ADSRScreen.closemenus()
+            font_size: 27
+            text: "EXT"
+        CustToggleButton:
             pos: 247,419
             size: 95, 60
-            text: "4.0"
+            text: "4"
             id:b004
             font_size: 27
             on_press:  b003.state='normal'                      
@@ -4678,7 +5236,8 @@
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press:root.manager.transition.direction='left'
-            on_press:root.manager.current='song_mode'
+            #on_press:root.manager.current='song_mode'
+            on_press:ADSRScreen.projectmode()
             on_press: ADSRScreen.closemenus()
             on_press: ADSRScreen.leaving()
             
@@ -4726,27 +5285,40 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "RANDOM %s"%(icon('icon-lock', 22))
+            text: "RANDOM"
             id:b018
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press: ADSRScreen.closemenus()
-            #on_press:root.manager.current='RandomScreen'
-            #on_press: ADSRScreen.leaving() 
+            on_press:root.manager.current='RandomScreen'
+            on_press: ADSRScreen.leaving() 
 
         CustButton3:
             markup: True
             pos: 344,900
             size: 150,60
-            text: "EUCLIDEAN %s"%(icon('icon-lock', 22))
+            text: "EUCLIDEAN"
             id:b019
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press: ADSRScreen.closemenus()
-            #on_press:root.manager.current='EuclideanScreen'
-            #on_press: ADSRScreen.leaving()            
+            on_press:root.manager.current='EuclideanScreen'
+            on_press: ADSRScreen.leaving()            
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "DRAW %s"%(icon('icon-lock', 22))
+            id:b023
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: ADSRScreen.closemenus()
+            #on_press:root.manager.current='DRAWScreen'
+            #on_press: ADSRScreen.leaving() 
 
         CustButton3:
             pos: 496,900
@@ -5027,6 +5599,7 @@
     b001:b001
     b002:b002
     b003:b003
+    b0003:b0003
     b004:b004
     b005:b005
     b006:b006
@@ -5039,10 +5612,13 @@
     b013:b013
     b014:b014
     b015:b015
+    b016:b016
     lbl1:lbl1
     lbl2:lbl2
     lbl3:lbl3
     sld1:sld1
+    sld2:sld2
+    sld3:sld3
     id:RandomScreen
     GridLayout:
         canvas.before:
@@ -5054,28 +5630,9 @@
                 pos: self.pos
                 size: self.size
                                 
-        Widget:
-            id:w_canvas
-            pos:225,10
-            canvas:
 
-                Color:
-                    rgba:(1,1,1,1)
+                
 
-                Ellipse:
-                    size:(15,15)
-                    pos:(57,67)  
-                                   
-        CustToggleButton:
-            pos: 1700,30
-            size: 70, 40
-            text: "rgt"
-            on_press: RandomScreen.test1()
-        CustToggleButton:
-            pos: 1700,80
-            size: 70, 40
-            text: "lft"            
-            on_press: RandomScreen.test2() 
         
         CustButton3:
             pos: 1000,1000
@@ -5095,31 +5652,33 @@
             value:3
             cursor_size:50,50
         Slider:
+            id:sld2
             min:1
             max:100
             size:700,50
             pos: 50,180
-            on_value:20
+            on_value:root.label2(*args)
             cursor_size:50,50
         Slider:
+            id:sld3
             min:1
             max:100
             size:700,50
             pos: 50,310
-            on_value:20
+            on_value:root.label3(*args)
             cursor_size:50,50
 
 
         Label:
-            font_size:28
+            font_size:25
             text:'RATCHET'
             pos:77,65
         Label:
-            font_size:28
+            font_size:25
             text:'TEMPERATURE'
             pos:107,195
         Label:
-            font_size:28
+            font_size:25
             text:'DENSITY'
             pos:72,325
 
@@ -5127,17 +5686,17 @@
         Label:
             id:lbl1
             font_size:24
-            text:'50'
+            text:'3'
             pos:650,65
         Label:
             id:lbl2
             font_size:24
-            text:'50'
+            text:'1'
             pos:650,195  
         Label:
             id:lbl3
             font_size:24
-            text:'50'
+            text:'1'
             pos:650,325  
 
 
@@ -5166,20 +5725,28 @@
             text: "120"
             font_size: 27
             on_press:b004.state='normal'
-            on_press:  b024.state='normal'  
-            on_press:  b025.state='normal'                      
+            #on_press:  b024.state='normal'  
+            #on_press:  b025.state='normal'                      
             on_press:RandomScreen.mode(2)
             on_press:RandomScreen.closemenus()
         CustToggleButton:
+            pos: 185,419
+            size: 60, 60
+            id:b0003  
+            on_press:b0003.state='normal'
+            on_press:RandomScreen.closemenus()
+            font_size: 27
+            text: "EXT"
+        CustToggleButton:
             pos: 247,419
             size: 95, 60
-            text: "4.0"
+            text: "-"
             id:b004
             font_size: 27
             on_press:b003.state='normal'
-            on_press:  b024.state='normal'  
-            on_press:  b025.state='normal'             
-            on_press:RandomScreen.mode(3)
+            on_press:b004.state='normal'
+            #on_press:  b024.state='normal'  
+            #on_press:  b025.state='normal'             
             on_press:RandomScreen.closemenus()
         CustToggleButton:
             pos: 344,419
@@ -5217,7 +5784,8 @@
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press:root.manager.transition.direction='left'
-            on_press:root.manager.current='song_mode'
+            #on_press:root.manager.current='song_mode'
+            on_press:RandomScreen.projectmode()
             on_press: RandomScreen.closemenus()
             on_press: RandomScreen.leaving()
             
@@ -5252,7 +5820,7 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "LFO %s"%(icon('icon-lock', 22))
+            text: "LFO"
             id:b012
             font_size: 25
             font_name:"Calibri"
@@ -5265,7 +5833,7 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "ADSR %s"%(icon('icon-lock', 22))
+            text: "ADSR"
             id:b014
             font_size: 25
             font_name:"Calibri"
@@ -5278,7 +5846,7 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "EUCLIDEAN %s"%(icon('icon-lock', 22))
+            text: "EUCLIDEAN"
             id:b015
             font_size: 25
             font_name:"Calibri"
@@ -5286,7 +5854,19 @@
             on_press: RandomScreen.closemenus()
             on_press:root.manager.current='EuclideanScreen'
             on_press: RandomScreen.leaving() 
-                    
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "DRAW %s"%(icon('icon-lock', 22))
+            id:b016
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: RandomScreen.closemenus()
+            #on_press:root.manager.current='DRAWScreen'
+            #on_press: RandomScreen.leaving()                     
 
         CustButton3:
             pos: 496,900
@@ -5299,6 +5879,39 @@
             on_press: RandomScreen.reset()
             on_press: RandomScreen.closemenus()
 
+        Widget:
+            id:w_canvas
+            pos:225,10
+            canvas:
+
+                Color:
+                    rgba:(0.6,0.6,0.6,1)
+
+                Ellipse:
+                    group:'a'
+                    size:(15,15)
+                    pos:(57,67) 
+                Ellipse:
+                    group:'b'
+                    size:(15,15)
+                    pos:(193,67) 
+                Ellipse:
+                    group:'c'
+                    size:(15,15)
+                    pos:(327,67) 
+                Ellipse:
+                    group:'d'
+                    size:(15,15)
+                    pos:(460,67) 
+                Ellipse:
+                    group:'e'
+                    size:(15,15)
+                    pos:(594,67) 
+                Ellipse:
+                    group:'f'
+                    size:(15,15)
+                    pos:(727,67) 
+
 
 
 <EuclideanScreen>:
@@ -5306,6 +5919,7 @@
     b001:b001
     b002:b002
     b003:b003
+    b0003:b0003
     b004:b004
     b005:b005
     b006:b006
@@ -5318,6 +5932,12 @@
     b013:b013
     b014:b014
     b015:b015
+    b016:b016
+    b017:b017
+    lbl1:lbl1
+    lbl2:lbl2
+    sld1:sld1
+    sld2:sld2
     id:EuclideanScreen
     GridLayout:
         canvas.before:
@@ -5328,18 +5948,155 @@
             Rectangle:
                 pos: self.pos
                 size: self.size
+
+        Widget:
+            id:w_canvas
+            pos:225,10
+            canvas:
+
+                Color:
+                    rgba:(1,1,1,1)
+
+
+                Ellipse:
+                    group:'a'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'b'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'c'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'d'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'e'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'f'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'g'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'h'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'i'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'j'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'k'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'l'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'m'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'n'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'o'
+                    size:(20,20)
+                    pos:(520, 370)
+                Ellipse:
+                    group:'p'
+                    size:(20,20)
+                    pos:(520, 370)
+
+                Line:
+                    group:'q'
+                    ellipse:(360,40,340,340,0,360)
+                    width:1
+                Color:
+                    rgba:(0.2,0.7 ,0.889, 1)
+
+                Ellipse:
+                    group:'r'
+                    size:(20,20)
+                    pos:(1000,1000) 
+                Ellipse:
+                    group:'s'
+                    size:(20,20)
+                    pos:(1000,1000) 
+                Ellipse:
+                    group:'t'
+                    size:(20,20)
+                    pos:(85,59)
+                Ellipse:
+                    group:'u'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'v'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'w'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'x'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'y'
+                    size:(20,20)
+                    pos:(85,59)
+                Ellipse:
+                    group:'z'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'z1'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'z2'
+                    size:(20,20)
+                    pos:(85,59)
+                Ellipse:
+                    group:'z3'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'z4'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'z5'
+                    size:(20,20)
+                    pos:(85,59) 
+                Ellipse:
+                    group:'z6'
+                    size:(20,20)
+                    pos:(1000,1000) 
+                Ellipse:
+                    group:'z7'
+                    size:(20,20)
+                    pos:(1000,1000) 
+                
                                 
-                                   
-        CustToggleButton:
-            pos: 1700,30
-            size: 70, 40
-            text: "rgt"
-            on_press: RandomScreen.test1()
-        CustToggleButton:
-            pos: 1700,80
-            size: 70, 40
-            text: "lft"            
-            on_press: RandomScreen.test2() 
+                                
         
         CustButton3:
             pos: 1000,1000
@@ -5348,6 +6105,50 @@
             pos: 1000,1000
             size: 15,415
 
+        Slider:
+            id:sld1
+            min:1
+            max:16
+            size:50,350
+            pos: 68,50
+            on_value:root.update1(*args)
+            on_value:root.label1()
+            on_value:root.posbutton()       
+            cursor_size:50,50
+            orientation:'vertical'
+        Slider:
+            id:sld2
+            min:1
+            max:sld1.value
+            #max:16
+            size:50,350
+            pos: 200,50
+            on_value:root.label2()
+            on_value:root.update2(*args)
+            on_value:root.manueloff()
+            on_value:root.colorbutton()
+            cursor_size:50,50
+            orientation:'vertical'
+
+        Label:
+            id:lbl1
+            font_size:24
+            text:'4'
+            pos:80,-20
+        Label:
+            id:lbl2
+            font_size:24
+            text:'1'
+            pos:225,-20 
+
+        Label:
+            font_size:25
+            text:'STEPS:'
+            pos:25,-20
+        Label:
+            font_size:25
+            text:'PULSES:'
+            pos:163,-20
 
 
         CustToggleButton:
@@ -5373,20 +6174,24 @@
             id:b003
             text: "120"
             font_size: 27
-            on_press:b004.state='normal'
-            on_press:  b024.state='normal'  
-            on_press:  b025.state='normal'                      
+            on_press:b004.state='normal'                     
             on_press:EuclideanScreen.mode(2)
             on_press:EuclideanScreen.closemenus()
         CustToggleButton:
+            pos: 185,419
+            size: 60, 60
+            id:b0003  
+            on_press:b0003.state='normal'
+            on_press:EuclideanScreen.closemenus()
+            font_size: 27
+            text: "EXT"
+        CustToggleButton:
             pos: 247,419
             size: 95, 60
-            text: "4.0"
+            text: "4"
             id:b004
             font_size: 27
-            on_press:b003.state='normal'
-            on_press:  b024.state='normal'  
-            on_press:  b025.state='normal'             
+            on_press:b003.state='normal'            
             on_press:EuclideanScreen.mode(3)
             on_press:EuclideanScreen.closemenus()
         CustToggleButton:
@@ -5413,7 +6218,7 @@
             pos: 1000,0
             size: 1000,419
             background_color: 0,0,0,0
-            on_press: Euclidean.closemenus()
+            on_press: EuclideanScreen.closemenus()
 
 
         CustButton3:
@@ -5425,8 +6230,9 @@
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press:root.manager.transition.direction='left'
-            on_press:root.manager.current='song_mode'
-            on_press: Euclidean.closemenus()
+            #on_press:root.manager.current='song_mode'
+            on_press:EuclideanScreen.projectmode()
+            on_press: EuclideanScreen.closemenus()
             on_press: EuclideanScreen.leaving()
             
 
@@ -5440,7 +6246,7 @@
             font_name:"Calibri"
             background_color: .68,.68,.84,1
             on_press:root.manager.current='param_mode'
-            on_press: Euclidean.closemenus()
+            on_press: EuclideanScreen.closemenus()
             on_press: EuclideanScreen.leaving()
 
         CustButton3:
@@ -5460,7 +6266,7 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "LFO %s"%(icon('icon-lock', 22))
+            text: "LFO"
             id:b012
             font_size: 25
             font_name:"Calibri"
@@ -5473,7 +6279,7 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "ADSR %s"%(icon('icon-lock', 22))
+            text: "ADSR"
             id:b014
             font_size: 25
             font_name:"Calibri"
@@ -5486,7 +6292,7 @@
             markup: True
             pos: 344,900
             size: 150,60
-            text: "RANDOM %s"%(icon('icon-lock', 22))
+            text: "RANDOM"
             id:b015
             font_size: 25
             font_name:"Calibri"
@@ -5494,7 +6300,19 @@
             on_press: EuclideanScreen.closemenus()
             on_press:root.manager.current='RandomScreen'
             on_press: EuclideanScreen.leaving() 
-                    
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "DRAW %s"%(icon('icon-lock', 22))
+            id:b017
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: EuclideanScreen.closemenus()
+            #on_press:root.manager.current='DRAWScreen'
+            #on_press: EuclideanScreen.leaving()                     
 
         CustButton3:
             pos: 496,900
@@ -5504,8 +6322,699 @@
             font_size: 25
             font_name:"Calibri"
             background_color: .68,.68,.84,1
-            on_press: EuclideanmScreen.reset()
+            on_press: EuclideanScreen.Reset()
             on_press: EuclideanScreen.closemenus()
+
+
+        CustButton3:
+            pos: 496,900
+            size: 150,60
+            text: "MANUAL: OFF"
+            id:b016
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: EuclideanScreen.closemenus()
+            on_press: EuclideanScreen.displayinfo()
+
+<MixerScreen>:
+
+    b001:b001
+    b002:b002
+    b003:b003
+    b004:b004
+    b005:b005
+    b006:b006
+    b007:b007
+    b008:b008
+    b009:b009
+    b010:b010
+    b011:b011
+    b012:b012
+    b013:b013
+    b014:b014
+    b015:b015
+    b0140:b0140
+    b0141:b0141
+    b0142:b0142
+    b1234:b1234
+
+    b01:b01
+    b02:b02
+    b03:b03
+    b04:b04
+    b05:b05
+    b06:b06
+    b07:b07
+    b08:b08
+    b09:b09
+    b010:b010
+    b011:b011
+    b012:b012
+    b013:b013
+    b014:b014
+    b015:b015
+    b0100:b0100
+    b0110:b0110
+    b0120:b0120
+    b0130:b0130
+    b01400:b01400
+    b0150:b0150
+    b0160:b0160
+
+
+    lbl1:lbl1
+    lbl2:lbl2
+    lbl3:lbl3
+    lbl4:lbl4
+    lbl5:lbl5
+    lbl6:lbl6
+    lbl7:lbl7
+    lbl8:lbl8
+    lbl9:lbl9
+    lbl10:lbl10
+    lbl11:lbl11
+    lbl12:lbl12
+    lbl13:lbl13
+    lbl14:lbl14
+    lbl15:lbl15
+    lbl16:lbl16
+
+    e01:e01
+    e02:e02
+    e03:e03
+    e04:e04
+    e05:e05
+    e06:e06
+    e07:e07
+    e08:e08
+    e09:e09
+    e010:e010
+    e011:e011
+    e012:e012
+    e013:e013
+    e014:e014
+    e015:e015
+    e016:e016
+
+    id:MixerScreen
+    GridLayout:
+        canvas.before:
+           
+
+            Color:
+                rgba: (.37, .39, .45, 0.4)
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Widget:
+            id:w_canvas
+            pos:225,10
+            canvas:
+
+                Color:
+                    rgba:(1,1,1,1)
+
+        CustToggleButton:
+            id:b0130
+            pos: 1,1
+            size: 197, 103
+            on_press: MixerScreen.mute(13)
+        CustToggleButton:
+            id:b01400
+            pos: 200,1
+            size: 198, 103
+            on_press: MixerScreen.mute(14)
+        CustToggleButton:
+            id:b0150
+            pos: 400,1
+            size: 198, 103
+            on_press: MixerScreen.mute(15)
+        CustToggleButton:
+            id:b0160
+            pos: 600,1
+            size: 198, 103
+            on_press: MixerScreen.mute(16)
+        CustToggleButton:
+            id:b09
+            pos: 1,106
+            size: 197, 103
+            on_press: MixerScreen.mute(9)
+        CustToggleButton:
+            id:b0100
+            pos: 200,106
+            size: 198, 103
+            on_press: MixerScreen.mute(10)
+        CustToggleButton:
+            id:b0110
+            pos: 400,106
+            size: 198, 103
+            on_press: MixerScreen.mute(11)
+        CustToggleButton:
+            id:b0120
+            pos: 600,106
+            size: 198, 103
+            on_press: MixerScreen.mute(12)
+        CustToggleButton:
+            id:b05
+            pos: 1,211
+            size: 197, 103
+            on_press: MixerScreen.mute(5)
+        CustToggleButton:
+            id:b06
+            pos: 200,211
+            size: 198, 103
+            on_press: MixerScreen.mute(6)
+        CustToggleButton:
+            id:b07
+            pos: 400,211
+            size: 198, 103
+            on_press: MixerScreen.mute(7)
+        CustToggleButton:
+            id:b08
+            pos: 600,211
+            size: 198, 103
+            on_press: MixerScreen.mute(8)
+        CustToggleButton:
+            id:b01
+            pos: 1,316
+            size: 197, 102
+            on_press: MixerScreen.mute(1)
+        CustToggleButton:
+            id:b02
+            pos: 200,316
+            size: 198, 102
+            on_press: MixerScreen.mute(2)
+        CustToggleButton:
+            id:b03
+            pos: 400,316
+            size: 198, 102
+            on_press: MixerScreen.mute(3)
+        CustToggleButton:
+            id:b04
+            pos: 600,316
+            size: 198, 102
+            on_press: MixerScreen.mute(4)
+
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e01
+            on_press:e01.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(1)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e02
+            on_press:e02.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(2)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e03
+            on_press:e03.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(3)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e04
+            on_press:e04.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(4)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e05
+            on_press:e05.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(5)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e06
+            on_press:e06.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(6)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e07
+            on_press:e07.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(7)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e08
+            on_press:e08.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(8)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e09
+            on_press:e09.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(9)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e010
+            on_press:e010.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(10)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e011
+            on_press:e011.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(11)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e012
+            on_press:e012.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(12)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e013
+            on_press:e013.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(13)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e014
+            on_press:e014.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(14)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e015
+            on_press:e015.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(15)
+            on_press: MixerScreen.leaving()
+        CustButton4:
+            pos: 496,900
+            font_size:18
+            id:e016
+            on_press:e016.state='normal'
+            background_color: (.37, .39, .45, 0.4)
+            on_press: MixerScreen.changescreen(16)
+            on_press: MixerScreen.leaving()
+
+        Label:
+            font_size:18
+            text:'1'
+            pos:-25,345
+        Label:
+            font_size:18
+            text:'2'
+            pos:173,345
+        Label:
+            font_size:18
+            text:'3'
+            pos:373,345
+        Label:
+            font_size:18
+            text:'4'
+            pos:573,345
+        Label:
+            font_size:18
+            text:'5'
+            pos:-25,241
+        Label:
+            font_size:18
+            text:'6'
+            pos:173,241
+        Label:
+            font_size:18
+            text:'7'
+            pos:373,241
+        Label:
+            font_size:18
+            text:'8'
+            pos:573,241
+        Label:
+            font_size:18
+            text:'9'
+            pos:-25,137
+        Label:
+            font_size:18
+            text:'10'
+            pos:173,137
+        Label:
+            font_size:18
+            text:'11'
+            pos:373,137
+        Label:
+            font_size:18
+            text:'12'
+            pos:573,137
+        Label:
+            font_size:18
+            text:'13'
+            pos:-25,31
+        Label:
+            font_size:18
+            text:'14'
+            pos:173,31
+        Label:
+            font_size:18
+            text:'15'
+            pos:373,31
+        Label:
+            font_size:18
+            text:'16'
+            pos:573,31
+
+
+        Label:
+            id:lbl1
+            font_size:18
+            pos:1146,-39
+            text:'SEQUENCE'
+        Label:
+            id:lbl2
+            font_size:18
+            pos:1146,8
+            text:'SEQUENCE'
+        Label:
+            id:lbl3
+            font_size:18
+            pos:1146,55
+            text:'SEQUENCE'
+        Label:
+            id:lbl4
+            font_size:18
+            pos:1146,102
+            text:'SEQUENCE'
+        Label:
+            id:lbl5
+            font_size:18
+            pos:1146,149
+            text:'SEQUENCE'
+        Label:
+            id:lbl6
+            font_size:18
+            pos:1146,196
+            text:'SEQUENCE'
+        Label:
+            id:lbl7
+            font_size:18
+            pos:1146,243
+            text:'SEQUENCE'
+        Label:
+            id:lbl8
+            font_size:18
+            pos:1000,278
+            text:'SEQUENCE'
+        Label:
+            id:lbl9
+            font_size:18
+            pos:1146,-39
+            text:'SEQUENCE'
+        Label:
+            id:lbl10
+            font_size:18
+            pos:1146,8
+            text:'SEQUENCE'
+        Label:
+            id:lbl11
+            font_size:18
+            pos:1146,55
+            text:'SEQUENCE'
+        Label:
+            id:lbl12
+            font_size:18
+            pos:1146,102
+            text:'SEQUENCE'
+        Label:
+            id:lbl13
+            font_size:18
+            pos:1146,149
+            text:'SEQUENCE'
+        Label:
+            id:lbl14
+            font_size:18
+            pos:1146,196
+            text:'SEQUENCE'
+        Label:
+            id:lbl15
+            font_size:18
+            pos:1146,243
+            text:'SEQUENCE'
+        Label:
+            id:lbl16
+            font_size:18
+            pos:1000,278
+            text:'SEQUENCE'
+
+
+
+                                
+                                   
+        CustToggleButton:
+            pos: 1700,30
+            size: 70, 40
+            text: "rgt"
+            on_press: MixerScreen.test1()
+        CustToggleButton:
+            pos: 1700,80
+            size: 70, 40
+            text: "lft"            
+            on_press: MixerScreen.test2() 
+        
+        CustButton3:
+            pos: 1000,1000
+            size: 15,415
+        CustButton3:
+            pos: 1000,1000
+            size: 15,415
+
+
+
+
+        CustToggleButton:
+            markup: True
+            pos: 1,419
+            size: 90, 60
+            text: "%s"%(icon('icon-play', 22))
+            id:b001
+            on_press: MixerScreen.start()
+        CustButton3:
+            markup: True
+            pos: 93,419
+            size: 90, 60
+            text: "%s"%(icon('icon-stop', 22))
+            id:b002
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.stop()
+        CustToggleButton:
+            pos: 185,419
+            size: 60, 60
+            id:b003
+            text: "120"
+            font_size: 27
+            on_press:b004.state='normal'                     
+            on_press:MixerScreen.mode(2)
+            on_press:MixerScreen.closemenus()
+        CustToggleButton:
+            pos: 247,419
+            size: 95, 60
+            text: "4"
+            id:b004
+            font_size: 27
+            on_press:b003.state='normal'            
+            on_press:MixerScreen.mode(3)
+            on_press:MixerScreen.closemenus()
+        CustToggleButton:
+            pos: 344,419
+            size: 150, 60
+            text: "TOOLS"
+            id:b005
+            on_press: MixerScreen.tools()
+        CustToggleButton:
+            pos: 496,419
+            size: 150, 60
+            text: "LIVE"
+            id:b006          
+            on_press: MixerScreen.seqmode()
+        CustToggleButton:
+            pos: 648,419
+            size: 150, 60
+            text: "MENU"
+            id:b007
+            on_press: MixerScreen.menu()
+
+        CustButton3:
+            id:b010
+            pos: 1000,0
+            size: 1000,419
+            background_color: 0,0,0,0
+            on_press: MixerScreen.closemenus()
+
+
+        CustButton3:
+            pos: 648,900
+            size: 150,60
+            text: "SONG"
+            id:b008
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:root.manager.transition.direction='left'
+            on_press:root.manager.current='song_mode'
+            on_press: MixerScreen.closemenus()
+            on_press: MixerScreen.leaving()
+            
+
+
+        CustButton3:
+            pos: 648,900
+            size: 150,60
+            text: "PARAM"
+            id:b009
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press:root.manager.current='param_mode'
+            on_press: MixerScreen.closemenus()
+            on_press: MixerScreen.leaving()
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "SEQUENCE"
+            id:b011
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.closemenus()
+            on_press:root.manager.current='piano_roll'
+            on_press: MixerScreen.leaving()            
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "LFO %s"%(icon('icon-lock', 22))
+            id:b012
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.closemenus()
+            on_press:root.manager.current='LFOScreen'
+            on_press: MixerScreen.leaving()     
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "ADSR %s"%(icon('icon-lock', 22))
+            id:b014
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.closemenus()
+            on_press:root.manager.current='ADSRScreen'
+            on_press: MixerScreen.leaving() 
+
+        CustButton3:
+            markup: True
+            pos: 344,900
+            size: 150,60
+            text: "RANDOM %s"%(icon('icon-lock', 22))
+            id:b015
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.closemenus()
+            on_press:root.manager.current='RandomScreen'
+            on_press: MixerScreen.leaving() 
+                    
+
+        CustButton3:
+            pos: 496,900
+            size: 150,60
+            text: "SAFE MODE"
+            id:b013
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.closemenus()
+            on_press: MixerScreen.safemode()
+
+
+        CustButton3:
+            pos: 496,900
+            size: 150,60
+            text: "INFOS: ON"
+            id:b0140
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.closemenus()
+            on_press: MixerScreen.displayinfo()
+
+        CustButton3:
+            markup: True
+            pos: 496,900
+            size: 150,60
+            text: "EFFECTS %s"%(icon('icon-lock', 22))
+            id:b0141
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.closemenus()
+
+        CustButton3:
+            pos: 496,900
+            size: 150,60
+            text: "EDIT: OFF"
+            id:b0142
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: MixerScreen.closemenus()
+            on_press: MixerScreen.displayedit()
+
+        CustButton3:
+            pos: 496,419
+            size: 302,60
+            text: "SAFE MODE"
+            id:b1234
+            font_size: 25
+            font_name:"Calibri"
+            background_color: .68,.68,.84,1
+            on_press: b1234.state='normal'
+
 
 
 <settings>:
